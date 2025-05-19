@@ -201,6 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (endAudio) { endAudio.pause(); endAudio.currentTime = 0; } 
     }
 
+    function playEndSound() {
+        if (isAudioEnabled && endAudio) {
+            // Small delay to ensure other sounds are fully stopped
+            setTimeout(() => {
+                endAudio.currentTime = 0;
+                endAudio.play().catch(e => console.error("Error playing end audio:", e));
+            }, 100);
+        }
+    }
+
     function triggerSoundsForCycle() {
         clearScheduledSounds(); 
 
@@ -357,10 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isAnimating) {
             if (currentCycleCount >= totalCycles) {
                 stopAllSounds(); // Clear phase sounds before end sound
-                if (isAudioEnabled && endAudio) {
-                    endAudio.currentTime = 0;
-                    endAudio.play().catch(e => console.error("Error playing end audio:", e));
-                }
+                playEndSound();
                 resetAnimationState();
             } else {
                 circleElement.classList.remove('breathing');
@@ -399,10 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCycleCounterDisplay();
             if (currentCycleCount >= totalCycles) {
                 stopAllSounds(); // Clear phase sounds before end sound
-                if (isAudioEnabled && endAudio) {
-                    endAudio.currentTime = 0;
-                    endAudio.play().catch(e => console.error("Error playing end audio:", e));
-                }
+                playEndSound();
                 resetAnimationState();
             } else {
                 if (isAudioEnabled) triggerSoundsForCycle(); // Check before triggering
