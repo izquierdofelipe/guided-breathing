@@ -257,7 +257,7 @@ body {
     border: 1px solid #ddd;
     border-radius: 5px;
     text-align: center;
-    font-size: 15px;
+    font-size: 16px; /* Changed from 15px to 16px */
     -moz-appearance: textfield;
 }
 .cycles-row #total-cycles::-webkit-outer-spin-button,
@@ -293,7 +293,7 @@ body {
     border: 1px solid #ddd;
     border-radius: 5px;
     text-align: center;
-    font-size: 15px;
+    font-size: 16px; /* Changed from 15px to 16px */
     -moz-appearance: textfield;
 }
 .duration-row .duration-inputs input[type="number"]::-webkit-outer-spin-button,
