@@ -150,14 +150,14 @@ body {
 
 #cycle-counter-text {
     font-family: Arial, sans-serif;
-    font-size: clamp(1.5rem, 0.5vw + 1rem, 3rem);
+    font-size: clamp(2rem, 0.5vw + 1.5rem, 3.5rem);
     color: rgba(255, 255, 255, 0.8);
     margin: 0;
 }
 
 #duration-display-text {
     font-family: Arial, sans-serif;
-    font-size: clamp(1rem, 0.5vw + 0.5rem, 2rem);
+    font-size: clamp(1.5rem, 0.5vw + 1rem, 2.5rem);
     color: rgba(255, 255, 255, 0.70);
     margin-top: 5px; /* Space below the cycle counter */
 }
