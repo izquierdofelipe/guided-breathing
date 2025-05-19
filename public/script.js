@@ -11,7 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_HOLD_TIME = 16;
     const DEFAULT_EXHALE_TIME = 8;
     const DEFAULT_TOTAL_CYCLES = 10;
+    const DEFAULT_AUDIO_ENABLED = true;
     const TRANSITION_TIME = 1.0; // 1-second transition time
+
+    const APP_SETTINGS_KEY = 'breathingAppSettings';
 
     const circleElement = document.getElementById('circle');
     const inhaleInput = document.getElementById('inhale-duration');
@@ -34,24 +37,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const endAudio = document.getElementById('end-audio');
     const audioToggleCheckbox = document.getElementById('audio-toggle');
 
-    // Set initial input values from defaults
-    inhaleInput.value = DEFAULT_INHALE_TIME;
-    holdInput.value = DEFAULT_HOLD_TIME;
-    exhaleInput.value = DEFAULT_EXHALE_TIME;
-    totalCyclesInput.value = DEFAULT_TOTAL_CYCLES;
+    // Function to load settings from localStorage
+    function loadSettings() {
+        const savedSettings = localStorage.getItem(APP_SETTINGS_KEY);
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            return {
+                inhaleTime: parseInt(settings.inhaleTime, 10) || DEFAULT_INHALE_TIME,
+                holdTime: parseInt(settings.holdTime, 10) || DEFAULT_HOLD_TIME,
+                exhaleTime: parseInt(settings.exhaleTime, 10) || DEFAULT_EXHALE_TIME,
+                totalCycles: parseInt(settings.totalCycles, 10) || DEFAULT_TOTAL_CYCLES,
+                audioEnabled: typeof settings.audioEnabled === 'boolean' ? settings.audioEnabled : DEFAULT_AUDIO_ENABLED
+            };
+        }
+        return {
+            inhaleTime: DEFAULT_INHALE_TIME,
+            holdTime: DEFAULT_HOLD_TIME,
+            exhaleTime: DEFAULT_EXHALE_TIME,
+            totalCycles: DEFAULT_TOTAL_CYCLES,
+            audioEnabled: DEFAULT_AUDIO_ENABLED
+        };
+    }
+
+    // Function to save settings to localStorage
+    function saveSettings(settings) {
+        localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    // Load initial settings
+    let currentSettings = loadSettings();
+
+    // Set initial input values from loaded or default settings
+    inhaleInput.value = currentSettings.inhaleTime;
+    holdInput.value = currentSettings.holdTime;
+    exhaleInput.value = currentSettings.exhaleTime;
+    totalCyclesInput.value = currentSettings.totalCycles;
+    audioToggleCheckbox.checked = currentSettings.audioEnabled;
 
     let isAnimating = false;
     let keyframesRule = null;
     let currentCycleCount = 0;
-    // Initialize effective times and total cycles from defaults
-    let effectiveInhaleTime = DEFAULT_INHALE_TIME;
-    let effectiveHoldTime = DEFAULT_HOLD_TIME;
-    let effectiveExhaleTime = DEFAULT_EXHALE_TIME;
-    let totalCycles = DEFAULT_TOTAL_CYCLES;
+    // Initialize effective times and total cycles from loaded or default settings
+    let effectiveInhaleTime = currentSettings.inhaleTime;
+    let effectiveHoldTime = currentSettings.holdTime;
+    let effectiveExhaleTime = currentSettings.exhaleTime;
+    let totalCycles = currentSettings.totalCycles;
 
     let holdSoundTimeoutId = null;
     let exhaleSoundTimeoutId = null;
-    let isAudioEnabled = true; // Default to true as checkbox is checked
+    let isAudioEnabled = currentSettings.audioEnabled; // Initialize from loaded or default
     let audioInitialized = false; // Flag to ensure audio is initialized only once
 
     // Initial setup for the wipe path's circumference and dash properties
@@ -250,6 +284,15 @@ document.addEventListener('DOMContentLoaded', () => {
         exhaleInput.value = effectiveExhaleTime;
         totalCyclesInput.value = totalCycles;
 
+        // Save current settings
+        saveSettings({
+            inhaleTime: effectiveInhaleTime,
+            holdTime: effectiveHoldTime,
+            exhaleTime: effectiveExhaleTime,
+            totalCycles: totalCycles,
+            audioEnabled: isAudioEnabled
+        });
+
         // Calculate the total duration for one cycle including transitions
         const baseAnimationDuration = effectiveInhaleTime + effectiveHoldTime + effectiveExhaleTime;
         let newTotalDuration;
@@ -377,9 +420,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isAudioEnabled) {
                     stopAllSounds(); // If audio is disabled, stop any current sounds
                 }
+                // Save settings when audio toggle changes
+                saveSettings({
+                    inhaleTime: effectiveInhaleTime,
+                    holdTime: effectiveHoldTime,
+                    exhaleTime: effectiveExhaleTime,
+                    totalCycles: totalCycles,
+                    audioEnabled: isAudioEnabled
+                });
             });
             // Initialize based on checkbox current state (in case it's not checked by default in future)
-            isAudioEnabled = audioToggleCheckbox.checked;
+            isAudioEnabled = audioToggleCheckbox.checked; // This was already here, ensure it aligns with loaded settings
         }
 
         updateAnimation(); // Initial setup
