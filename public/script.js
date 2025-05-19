@@ -37,6 +37,64 @@ document.addEventListener('DOMContentLoaded', () => {
     const endAudio = document.getElementById('end-audio');
     const audioToggleCheckbox = document.getElementById('audio-toggle');
 
+    let manualHour = -1; // -1 means automatic, 0-23 means manual override by slider
+    let sliderEl = null; // Will be the slider input element
+    let sliderHourDisplayEl = null; // Will be the span element for displaying the hour
+
+    // Function to create and append a slider and its hour display for development/testing
+    function createDevelopmentSliderAndDisplay() {
+        const devHostnames = ['localhost', '127.0.0.1'];
+        if (devHostnames.includes(window.location.hostname)) {
+            console.log("Development mode detected, creating time slider with display.");
+
+            const container = document.createElement('div');
+            container.style.position = 'fixed';
+            container.style.bottom = '10px'; // Adjusted for text display
+            container.style.left = '50%';
+            container.style.transform = 'translateX(-50%)';
+            container.style.width = '80%';
+            container.style.maxWidth = '500px';
+            container.style.zIndex = '1000';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.alignItems = 'center';
+
+            sliderHourDisplayEl = document.createElement('span');
+            sliderHourDisplayEl.id = 'dev-time-slider-display';
+            sliderHourDisplayEl.style.background = 'rgba(0,0,0,0.7)';
+            sliderHourDisplayEl.style.color = 'white';
+            sliderHourDisplayEl.style.padding = '3px 8px';
+            sliderHourDisplayEl.style.borderRadius = '3px';
+            sliderHourDisplayEl.style.marginBottom = '5px';
+            sliderHourDisplayEl.style.fontSize = '12px';
+            sliderHourDisplayEl.textContent = '-'; // Initial text
+
+            sliderEl = document.createElement('input');
+            sliderEl.id = 'dev-time-slider';
+            sliderEl.type = 'range';
+            sliderEl.min = '0';
+            sliderEl.max = '100';
+            sliderEl.value = '50';
+            sliderEl.step = '1';
+            sliderEl.style.width = '100%'; // Slider takes full width of container
+            sliderEl.style.background = 'rgba(255,255,255,0.7)'; // Slider background
+            sliderEl.style.padding = '5px';
+            sliderEl.style.boxSizing = 'border-box';
+            sliderEl.style.borderRadius = '5px';
+
+            container.appendChild(sliderHourDisplayEl);
+            container.appendChild(sliderEl);
+            document.body.appendChild(container);
+            
+            // No need to return, elements are assigned to sliderEl and sliderHourDisplayEl
+        } else {
+            sliderEl = null;
+            sliderHourDisplayEl = null;
+        }
+    }
+
+    createDevelopmentSliderAndDisplay(); // Create slider and display if in dev mode
+
     // Function to load settings from localStorage
     function loadSettings() {
         const savedSettings = localStorage.getItem(APP_SETTINGS_KEY);
@@ -124,6 +182,136 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize audio immediately when the page loads
     initializeAndUnlockAudio();
+
+    // ---------- Dynamic Background Logic Start --------------------
+    const grads = [
+        [{color:"00000c",position:0},{color:"00000c",position:0}],
+        [{color:"020111",position:85},{color:"191621",position:100}],
+        [{color:"020111",position:60},{color:"20202c",position:100}],
+        [{color:"020111",position:10},{color:"3a3a52",position:100}],
+        [{color:"20202c",position:0},{color:"515175",position:100}],
+        [{color:"40405c",position:0},{color:"6f71aa",position:80},{color:"8a76ab",position:100}],
+        [{color:"4a4969",position:0},{color:"7072ab",position:50},{color:"cd82a0",position:100}],
+        [{color:"757abf",position:0},{color:"8583be",position:60},{color:"eab0d1",position:100}],
+        [{color:"82addb",position:0},{color:"ebb2b1",position:100}],
+        [{color:"94c5f8",position:1},{color:"a6e6ff",position:70},{color:"b1b5ea",position:100}],
+        [{color:"b7eaff",position:0},{color:"94dfff",position:100}],
+        [{color:"9be2fe",position:0},{color:"67d1fb",position:100}],
+        [{color:"90dffe",position:0},{color:"38a3d1",position:100}],
+        [{color:"57c1eb",position:0},{color:"246fa8",position:100}],
+        [{color:"2d91c2",position:0},{color:"1e528e",position:100}],
+        [{color:"2473ab",position:0},{color:"1e528e",position:70},{color:"5b7983",position:100}],
+        [{color:"1e528e",position:0},{color:"265889",position:50},{color:"9da671",position:100}],
+        [{color:"1e528e",position:0},{color:"728a7c",position:50},{color:"e9ce5d",position:100}],
+        [{color:"154277",position:0},{color:"576e71",position:30},{color:"e1c45e",position:70},{color:"b26339",position:100}],
+        [{color:"163C52",position:0},{color:"4F4F47",position:30},{color:"C5752D",position:60},{color:"B7490F",position:80},{color:"2F1107",position:100}],
+        [{color:"071B26",position:0},{color:"071B26",position:30},{color:"8A3B12",position:80},{color:"240E03",position:100}],
+        [{color:"010A10",position:30},{color:"59230B",position:80},{color:"2F1107",position:100}],
+        [{color:"090401",position:50},{color:"4B1D06",position:100}],
+        [{color:"00000c",position:80},{color:"150800",position:100}],
+    ];
+
+    const toCSS = stops =>
+        `linear-gradient(to bottom,${stops.map(s=>` #${s.color} ${s.position}%`).join(',')})`;
+
+    let curHour = -1;
+    const tzMapPromise = fetch('/tz-latlng.json')
+        .then(r => r.json())
+        .catch(err => {
+            console.warn('Failed to load tz-latlng.json, using default coordinates. Error:', err);
+            return {}; // Return empty object on error to avoid breaking lat/lng lookup
+        });
+
+    async function setHour(h) {
+        // Ensure h is a number and within 0-23 range for safety, though grads array handles Math.min/max
+        const hourToShow = Math.min(Math.max(Math.round(h), 0), 23);
+        
+        // If the hour to show is the same as the current hour, AND we are NOT in manual mode (or slider doesn't exist),
+        // then there's no need to update.
+        if (hourToShow === curHour && !(sliderEl && manualHour !== -1)) {
+            return;
+        }
+
+        curHour = hourToShow;
+        const gradIndex = Math.min(Math.max(hourToShow, 0), grads.length - 1);
+        document.body.style.background = toCSS(grads[gradIndex]);
+    }
+
+    // Helper function to update slider position
+    function updateSliderPosition(hourToShow) {
+        if (sliderEl) {
+            const sliderValue = (hourToShow / (grads.length - 1)) * 100;
+            sliderEl.value = sliderValue;
+        }
+        if (sliderHourDisplayEl) {
+            sliderHourDisplayEl.textContent = `${hourToShow}:00`;
+        }
+    }
+
+    async function updateSun() {
+        try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const map = await tzMapPromise;
+            const [lat, lng] = map[tz] || [40.7144, -74.0060]; // Default to New York if timezone not in map
+            const now = new Date();
+            // console.log('SunCalc object:', SunCalc); // Keep for debugging if needed
+            const times = SunCalc.getTimes(now, lat, lng);
+
+            const currentActualHour = now.getHours(); // Using wall clock hour for gradient selection
+
+            // console.log(`Daylight hours for ${tz} [${lat}, ${lng}]: ...`); // Keep for debugging
+
+            if (manualHour !== -1) {
+                setHour(manualHour); // Stick to manual hour if active
+            } else {
+                setHour(currentActualHour);
+                updateSliderPosition(currentActualHour); // Update slider if in automatic mode
+            }
+
+        } catch (error) {
+            console.error("Error in updateSun:", error);
+            // Fallback behavior
+            const fallbackHour = new Date().getHours();
+            if (manualHour !== -1) {
+                setHour(manualHour);
+            } else {
+                setHour(fallbackHour);
+                updateSliderPosition(fallbackHour);
+            }
+        }
+    }
+
+    // Slider event listener for testing
+    if (sliderEl) {
+        sliderEl.addEventListener('input', e => {
+            const targetValue = parseInt(e.target.value, 10);
+            // Calculate hour based on the slider's 0-100 value and the number of gradient steps (24 hours, 0-23)
+            const h = Math.round(((grads.length - 1) * targetValue) / 100);
+            manualHour = h;
+            setHour(h); // Update background gradient
+            // Update the slider's visual text display to the new hour
+            // updateSliderPosition(h); // Call this to also update the text element if not already handled
+            if (sliderHourDisplayEl) { // Direct update to be certain
+                sliderHourDisplayEl.textContent = `${h}:00`;
+            }
+        });
+    }
+
+    // Initial setup
+    updateSun(); // Call immediately to set initial background and slider position
+
+    // Update current hour's gradient every minute (if not in manual mode)
+    setInterval(() => {
+        if (manualHour === -1) { // Only update if manual override is not active
+            const currentActualHour = new Date().getHours();
+            setHour(currentActualHour);
+            updateSliderPosition(currentActualHour);
+        }
+    }, 60_000);
+    // Update sun times (and potentially adjust gradient logic based on it) every hour
+    setInterval(updateSun, 3_600_000);
+
+    // ---------- Dynamic Background Logic End ----------------------
 
     function openSettingsModal() {
         if (settingsModal && modalOverlay) {
@@ -445,5 +633,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } else {
         console.error('One or more required elements were not found.');
+    }
+
+    // Ensure initial updateAnimation call correctly sets up UI displays
+    // updateAnimation(); // This call might also interact with setHour and needs to be aware of manualHour
+
+    // Initial call to set up based on current time or defaults
+    if (typeof updateAnimation === "function") {
+        updateAnimation(); // Ensure breathing animation settings and displays are also initialized.
     }
 }); 
