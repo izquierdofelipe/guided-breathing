@@ -1,5 +1,6 @@
 html {
     overflow: hidden;
+    height: 100%; /* Ensure html element also has a defined height */
 }
 
 body {
