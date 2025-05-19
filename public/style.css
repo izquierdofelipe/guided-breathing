@@ -1,17 +1,18 @@
 html {
-    overflow: hidden !important; /* Ensure no scroll on html */
+    overflow: hidden; /* Ensure no scroll on html */
     height: 100%;
     width: 100%; /* Ensure html takes full width */
-    position: fixed; /* Prevent scrolling at the root */
+    /* position: fixed; Removed as it can cause issues on Safari */
 }
 
 body {
-    position: fixed;
+    /* position: fixed; Removed */
+    position: relative; /* Added to establish a containing block if needed */
     width: 100%;
     height: 100%;
     margin: 0;
     font-family: Arial, sans-serif;
-    overflow: hidden !important; /* Ensure no scroll on body */
+    overflow: hidden; /* Ensure no scroll on body */
 }
 
 #circle {
@@ -228,12 +229,6 @@ body {
     display: block; /* Make labels take full width */
     margin-bottom: 5px; /* Space between label and input */
     text-align: left;
-}
-
-#settings-modal .controls > input[type="number"] {
-    /* This general rule is no longer needed as inputs are styled within their rows */
-    /* width: 100%; */
-    /* box-sizing: border-box; */
 }
 
 /* New styles for settings modal controls */
