@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_EXHALE_TIME = 8;
     const DEFAULT_TOTAL_CYCLES = 10;
     const DEFAULT_AUDIO_ENABLED = true;
-    const TRANSITION_TIME = 1.0; // 1-second transition time
+    const TRANSITION_TIME = 0.5; 
 
     const APP_SETTINGS_KEY = 'breathingAppSettings';
 
