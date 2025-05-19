@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_HOLD_TIME = 16;
     const DEFAULT_EXHALE_TIME = 8;
     const DEFAULT_TOTAL_CYCLES = 10;
+    const TRANSITION_TIME = 1.0; // 1-second transition time
 
     const circleElement = document.getElementById('circle');
     const inhaleInput = document.getElementById('inhale-duration');
@@ -51,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let holdSoundTimeoutId = null;
     let exhaleSoundTimeoutId = null;
     let isAudioEnabled = true; // Default to true as checkbox is checked
+    let audioInitialized = false; // Flag to ensure audio is initialized only once
 
     // Initial setup for the wipe path's circumference and dash properties
     const wipeRadius = parseFloat(holdWipePathElement.getAttribute('r'));
@@ -58,6 +60,33 @@ document.addEventListener('DOMContentLoaded', () => {
     holdWipePathElement.style.setProperty('--wipe-circumference', wipeCircumference);
     holdWipePathElement.style.strokeDasharray = wipeCircumference;
     holdWipePathElement.style.strokeDashoffset = wipeCircumference; // Start empty
+
+    function initializeAndUnlockAudio() {
+        if (audioInitialized) return;
+
+        const audioElements = [
+            { el: inhaleAudio, vol: 0.6 },
+            { el: holdAudio, vol: 0.6 },
+            { el: exhaleAudio, vol: 0.6 },
+            { el: endAudio, vol: 0.4 }
+        ];
+
+        audioElements.forEach(item => {
+            if (item.el) {
+                item.el.volume = item.vol;
+                item.el.load(); // Explicitly ask the browser to load the audio file
+            }
+        });
+
+        audioInitialized = true;
+        console.log("Audio elements initialized and unlocked on user interaction.");
+    }
+
+    // Add event listeners to initialize audio on the first user interaction
+    // This helps with autoplay policies in browsers like Safari.
+    document.addEventListener('click', initializeAndUnlockAudio, { once: true });
+    document.addEventListener('keydown', initializeAndUnlockAudio, { once: true });
+    document.addEventListener('touchstart', initializeAndUnlockAudio, { once: true });
 
     function openSettingsModal() {
         if (settingsModal && modalOverlay) {
@@ -141,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function triggerSoundsForCycle() {
         clearScheduledSounds(); 
 
-        if (!isAudioEnabled) return;
+        if (!isAudioEnabled || !audioInitialized) return;
 
         if (inhaleAudio) {
             inhaleAudio.currentTime = 0;
@@ -152,14 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
             holdSoundTimeoutId = setTimeout(() => {
                 holdAudio.currentTime = 0;
                 holdAudio.play().catch(e => console.error("Error playing hold audio:", e));
-            }, effectiveInhaleTime * 1000);
+            }, (TRANSITION_TIME + effectiveInhaleTime) * 1000);
         }
 
         if (exhaleAudio && effectiveExhaleTime > 0) {
             exhaleSoundTimeoutId = setTimeout(() => {
                 exhaleAudio.currentTime = 0;
                 exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
-            }, (effectiveInhaleTime + effectiveHoldTime) * 1000);
+            }, (TRANSITION_TIME + effectiveInhaleTime + TRANSITION_TIME + effectiveHoldTime) * 1000);
         }
     }
 
@@ -182,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setTimeout(() => {
                 holdWipePathElement.style.animationDuration = `${effectiveHoldTime}s`;
-                holdWipePathElement.style.animationDelay = `${effectiveInhaleTime}s`;
+                holdWipePathElement.style.animationDelay = `${TRANSITION_TIME + effectiveInhaleTime + TRANSITION_TIME}s`;
                 holdWipePathElement.style.animationTimingFunction = 'linear';
                 holdWipePathElement.style.animationFillMode = 'forwards';
                 
@@ -211,31 +240,66 @@ document.addEventListener('DOMContentLoaded', () => {
         effectiveExhaleTime = parseInt(exhaleInput.value, 10) || DEFAULT_EXHALE_TIME;
         totalCycles = parseInt(totalCyclesInput.value, 10) || DEFAULT_TOTAL_CYCLES;
 
+        // Ensure times are non-negative, with minimums for inhale/exhale
+        effectiveInhaleTime = Math.max(1, effectiveInhaleTime);
+        effectiveHoldTime = Math.max(0, effectiveHoldTime);
+        effectiveExhaleTime = Math.max(1, effectiveExhaleTime);
+
         inhaleInput.value = effectiveInhaleTime;
         holdInput.value = effectiveHoldTime;
         exhaleInput.value = effectiveExhaleTime;
         totalCyclesInput.value = totalCycles;
 
-        const newTotalDuration = effectiveInhaleTime + effectiveHoldTime + effectiveExhaleTime;
-        if (newTotalDuration <= 0) {
-            inhaleInput.value = DEFAULT_INHALE_TIME;
-            holdInput.value = DEFAULT_HOLD_TIME;
-            exhaleInput.value = DEFAULT_EXHALE_TIME;
+        // Calculate the total duration for one cycle including transitions
+        const baseAnimationDuration = effectiveInhaleTime + effectiveHoldTime + effectiveExhaleTime;
+        let newTotalDuration;
+
+        if (baseAnimationDuration <= 0) { // Should not happen with new checks but good fallback
             effectiveInhaleTime = DEFAULT_INHALE_TIME;
             effectiveHoldTime = DEFAULT_HOLD_TIME;
             effectiveExhaleTime = DEFAULT_EXHALE_TIME;
+            newTotalDuration = DEFAULT_INHALE_TIME + DEFAULT_HOLD_TIME + DEFAULT_EXHALE_TIME + (3 * TRANSITION_TIME);
+        } else {
+            newTotalDuration = baseAnimationDuration + (3 * TRANSITION_TIME);
         }
-
-        const inhaleEndPercent = (effectiveInhaleTime / newTotalDuration) * 100;
-        const holdEndPercent = ((effectiveInhaleTime + effectiveHoldTime) / newTotalDuration) * 100;
         
         while (keyframesRule.cssRules.length > 0) { keyframesRule.deleteRule(keyframesRule.cssRules[0].keyText); }
 
-        const kf = [
-            { p: 0, scale: 0.05 }, { p: inhaleEndPercent, scale: 1.4 },
-            { p: holdEndPercent, scale: 1.4 }, { p: 100, scale: 0.05 }
-        ];
-        const uniqueKeyframes = kf.filter((item, index, self) => index === self.findIndex((t) => t.p === item.p));
+        const points = [];
+        let currentTime = 0;
+
+        // Start (Beginning of Inhale Transition)
+        points.push({ t: currentTime, scale: 0.05 });
+        currentTime += TRANSITION_TIME;
+        // End of Inhale Transition / Start of Inhale Animation
+        points.push({ t: currentTime, scale: 0.05 });
+        currentTime += effectiveInhaleTime;
+        // End of Inhale Animation / Start of Hold Transition
+        points.push({ t: currentTime, scale: 1.4 });
+        currentTime += TRANSITION_TIME;
+        // End of Hold Transition / Start of Hold Animation
+        points.push({ t: currentTime, scale: 1.4 });
+        currentTime += effectiveHoldTime;
+        // End of Hold Animation / Start of Exhale Transition
+        points.push({ t: currentTime, scale: 1.4 });
+        currentTime += TRANSITION_TIME;
+        // End of Exhale Transition / Start of Exhale Animation
+        points.push({ t: currentTime, scale: 1.4 });
+        currentTime += effectiveExhaleTime;
+        // End of Exhale Animation
+        points.push({ t: currentTime, scale: 0.05 });
+
+        // Convert time points to percentages for keyframes
+        const kf = points.map(point => ({
+            p: (point.t / newTotalDuration) * 100,
+            scale: point.scale
+        }));
+        
+        const uniqueKeyframes = kf.filter((item, index, self) => 
+            index === self.findIndex((t) => t.p.toFixed(2) === item.p.toFixed(2)) || 
+            (item.p.toFixed(2) === "100.00" && self.filter(x => x.p.toFixed(2) === "100.00").length === 1) // Ensure 100% keyframe is kept if it's the last unique
+        );
+
         uniqueKeyframes.forEach(key => {
             const keyText = `${key.p.toFixed(2)}%`;
             const ruleString = `${keyText} { transform: translate(-50%, -50%) scale(${key.scale.toFixed(2)}); }`;
