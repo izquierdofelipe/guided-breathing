@@ -1,0 +1,419 @@
+body {
+    height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif; /* General fallback font */
+    background-image: linear-gradient(75deg, rgba(252,224,67, 0.8) 0%, rgba(251,123,162, 0.8) 100%);
+    overflow: hidden; /* To prevent scrollbars if circle slightly overflows */
+}
+
+#circle {
+  background-color: rgba(255, 255, 255, 0.80);
+  /* Responsive sizing: target 35vh, but ensure scaled size (1.4x) is max 90vw */
+  /* So, base size should be max (90vw / 1.4) = ~64.2857vw */
+  width: min(35vh, 64.2857vw);
+  height: min(35vh, 64.2857vw);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+
+#circle.breathing {
+  animation-name: breathing-circle;
+  animation-duration: 11s; /* Initial total duration, will be updated by JS */
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-out; /* Changed from linear for more natural easing */
+}
+
+@keyframes breathing-circle {
+  0%   { transform: translate(-50%, -50%) scale(0.05); } /* Start very small */
+  /* Keyframe percentages below will be dynamically updated by JavaScript */
+  30%  { transform: translate(-50%, -50%) scale(1.4); }  /* Default End Inhale / Start Hold */
+  60%  { transform: translate(-50%, -50%) scale(1.4); }  /* Default Default End Hold / Start Exhale */
+  90%  { transform: translate(-50%, -50%) scale(0.05); }  /* Default End Exhale */
+  100% { transform: translate(-50%, -50%) scale(0.05); }  /* Cycle end */
+}
+
+/* All CSS related to .popup, #inhale-message, #hold-message, #exhale-message, */
+/* and keyframes inh-direction, hold-direction, exh-direction has been removed. */
+
+/* #exhale-message specific positioning override from user, might not be needed with new centering */
+/* #exhale-message {
+  left: 7%; 
+} */
+
+#circle.breathing #inhale-message {
+  color: rgb(253, 193, 140); /* Inhale color */
+  animation-name: inh-direction;
+  animation-duration: 11s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+#circle.breathing #hold-message {
+  color: rgb(135, 206, 235); /* Hold color */
+  animation-name: hold-direction;
+  animation-duration: 11s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+#circle.breathing #exhale-message {
+  color: rgb(255, 160, 122); /* Exhale color */
+  animation-name: exh-direction;
+  animation-duration: 11s;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+@keyframes inh-direction {
+  0%   { opacity: 1; }
+  6%   { opacity: 1; } /* Stay visible for a short duration */
+  30%  { opacity: 0; } /* Slowly fade out during the rest of inhale */
+  100% { opacity: 0; } /* Ensure it stays off */
+}
+
+@keyframes hold-direction {
+  0%   { opacity: 0; }
+  30%  { opacity: 0; } /* Start fading in at the beginning of hold phase */
+  42%  { opacity: 1; } /* Slowly fade in */
+  48%  { opacity: 1; } /* Stay visible */
+  60%  { opacity: 0; } /* Slowly fade out */
+  100% { opacity: 0; } /* Ensure it stays off */
+}
+
+@keyframes exh-direction {
+  0%   { opacity: 0; }
+  60%  { opacity: 0; } /* Start fading in at the beginning of exhale phase */
+  72%  { opacity: 1; } /* Slowly fade in */
+  78%  { opacity: 1; } /* Stay visible */
+  90%  { opacity: 0; } /* Slowly fade out */
+  100% { opacity: 0; } /* Ensure it stays off */
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 10;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.controls label {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+.controls input[type="number"] {
+    width: 45px; /* Adjusted width for ~2 digits + padding */
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    text-align: center; /* Center the number */
+    -moz-appearance: textfield; /* Firefox - hide spinners */
+}
+
+/* Hide spinners for WebKit browsers (Chrome, Safari, Edge) */
+.controls input[type="number"]::-webkit-outer-spin-button,
+.controls input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+#cycle-counter-container {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 5;
+    cursor: pointer; /* Make it appear clickable */
+    user-select: none; /* Prevent text selection when clicking */
+}
+
+#cycle-counter-text {
+    font-family: Arial, sans-serif;
+    font-size: clamp(1.5rem, 0.5vw + 1rem, 3rem);
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+}
+
+#duration-display-text {
+    font-family: Arial, sans-serif;
+    font-size: clamp(1rem, 0.5vw + 0.5rem, 2rem);
+    color: rgba(255, 255, 255, 0.70);
+    margin-top: 5px; /* Space below the cycle counter */
+}
+
+/* All CSS related to .popup, #inhale-message, #hold-message, #exhale-message, */
+/* and keyframes inh-direction, hold-direction, exh-direction has been removed. */
+
+#settings-icon-container {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    padding: 5px; /* Add some padding around the image container */
+    cursor: pointer;
+}
+
+#settings-icon-img {
+    width: 28px; /* Adjust size as needed */
+    height: 28px; /* Adjust size as needed */
+    display: block; /* Remove extra space below inline images */
+}
+
+#modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+    z-index: 999; /* Below modal, above everything else */
+}
+
+#settings-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #f0f0f0; /* Light background for modal */
+    padding: 25px;
+    padding-top: 40px; /* More space for close button */
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 1000;
+    min-width: 300px; /* Ensure it's not too narrow */
+}
+
+/* Style for the .controls div when it's inside the modal */
+#settings-modal .controls {
+    position: static; /* Override absolute positioning */
+    transform: none;  /* Override transform */
+    background-color: transparent; /* Transparent as modal has background */
+    box-shadow: none; /* No shadow as modal has shadow */
+    padding: 0; /* Reset padding if any specific to top placement */
+    flex-direction: column; /* Stack controls vertically */
+    gap: 20px; /* Space between rows of controls */
+    align-items: stretch; /* Make labels and inputs take full width within modal */
+}
+
+#settings-modal .controls > label {
+    display: block; /* Make labels take full width */
+    margin-bottom: 5px; /* Space between label and input */
+    text-align: left;
+}
+
+#settings-modal .controls > input[type="number"] {
+    /* This general rule is no longer needed as inputs are styled within their rows */
+    /* width: 100%; */
+    /* box-sizing: border-box; */
+}
+
+/* New styles for settings modal controls */
+#settings-modal .controls {
+    font-family: 'Arial', sans-serif; /* Consistent font */
+    gap: 25px; /* Increased gap between control rows */
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Label on left, input/control on right */
+    width: 100%;
+}
+
+.control-row label {
+    margin-bottom: 0; /* Override general label style */
+    color: #333;
+    font-size: 15px;
+}
+
+/* Cycles Row */
+.cycles-row #total-cycles {
+    width: 55px; /* Enough for ~2-3 digits + padding/border */
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 15px;
+    -moz-appearance: textfield;
+}
+.cycles-row #total-cycles::-webkit-outer-spin-button,
+.cycles-row #total-cycles::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Duration Row */
+.duration-row .duration-label {
+    flex-shrink: 0; 
+    margin-right: 0; /* No longer needed as it's above */
+    margin-bottom: 8px; /* Space between label and inputs block */
+    text-align: left; /* Ensure label is left-aligned */
+    width: 100%; /* Make label take full width */
+}
+.duration-row {
+    flex-direction: column; /* Stack label and inputs-container vertically */
+    align-items: flex-start; /* Align items to the start of the cross axis (left) */
+}
+
+.duration-row .duration-inputs {
+    display: flex;
+    flex-direction: row; /* Stack inputs horizontally */
+    align-items: center; /* Align items vertically in the center */
+    justify-content: space-between; /* Distribute space between inputs */
+    gap: 10px; /* Gap between duration inputs */
+    width: 100%; /* Make the inputs container take full width */
+}
+.duration-row .duration-inputs input[type="number"] {
+    width: calc(33.333% - 10px); /* Distribute width, accounting for gap. Adjust if padding/border affects this. */
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 15px;
+    -moz-appearance: textfield;
+}
+.duration-row .duration-inputs input[type="number"]::-webkit-outer-spin-button,
+.duration-row .duration-inputs input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* .duration-row .duration-inputs span { */ /* No longer needed */
+    /* color: #888; */
+/* } */
+
+/* Audio Row - Custom Checkbox */
+.audio-row .custom-checkbox-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.audio-row #audio-toggle {
+    opacity: 0; /* Hide original checkbox */
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.audio-row .custom-checkbox-label {
+    position: relative;
+    display: inline-block;
+    width: 44px; /* Width of the toggle switch */
+    height: 24px; /* Height of the toggle switch */
+    background-color: #ccc;
+    border-radius: 12px; /* Make it pill-shaped */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.audio-row .custom-checkbox-label::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px; /* Size of the inner circle */
+    height: 20px; /* Size of the inner circle */
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.2s ease-in-out;
+}
+
+.audio-row #audio-toggle:checked + .custom-checkbox-label {
+    background-color: #4CAF50; /* Green when checked */
+}
+
+.audio-row #audio-toggle:checked + .custom-checkbox-label::after {
+    transform: translateX(20px); /* Move circle to the right */
+}
+
+/* Focus style for accessibility if desired - can be added later */
+/*
+.audio-row #audio-toggle:focus + .custom-checkbox-label {
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.5);
+}
+*/
+
+#close-modal-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #555;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+#close-modal-btn:hover {
+    color: #000;
+}
+
+/* Active states */
+#modal-overlay.active,
+#settings-modal.active {
+    display: block;
+}
+
+#settings-modal.active .controls {
+    display: flex; /* Ensure controls are visible when modal is active */
+}
+
+#hold-wipe-svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 105%; /* Slightly larger than the parent circle */
+    height: 105%;
+    transform: translate(-50%, -50%) rotate(-90deg); /* Center and rotate for clockwise start from top */
+    overflow: visible; /* Allow stroke to exceed viewbox if needed, though r=48 in 0 0 100 100 is fine */
+    z-index: -1; /* Behind the main circle content if any, though circle is just background */
+}
+
+#hold-wipe-path {
+    fill: none;
+    stroke: #FFFFFF; /* White color for the wipe */
+    stroke-width: 3; /* Adjust thickness as needed, relative to viewbox */
+    stroke-opacity: 0; /* Initially hidden, opacity controlled by its animation */
+    /* stroke-dasharray and stroke-dashoffset will be set by JS */
+}
+
+/* Apply wipe animation when main circle is breathing */
+#circle.breathing #hold-wipe-path {
+    /* animation-name: radial-hold-wipe; REMOVED - JS will control this */
+    /* animation-duration and animation-delay set by JS */
+    animation-timing-function: linear; /* Wipe should be linear over the hold time */
+    /* Opacity is handled by the keyframes of radial-hold-wipe */
+}
+
+@keyframes radial-hold-wipe {
+    0% {
+        stroke-dashoffset: var(--wipe-circumference); /* Start empty */
+        stroke-opacity: 0.2; /* Become visible at start of animation (after delay) */
+    }
+    99% { /* Stay visible for almost the entire duration */
+        stroke-dashoffset: 0; /* End full */
+        stroke-opacity: 0.2;
+    }
+    100% { /* Fade out at the very end */
+        stroke-dashoffset: 0;
+        stroke-opacity: 0;
+    }
+} 

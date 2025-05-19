@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guided Breathing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="modal-overlay"></div>
+
+    <div id="settings-modal">
+        <button id="close-modal-btn">&times;</button>
+        <div class="controls">
+            <div class="control-row cycles-row">
+                <label for="total-cycles">Breaths Counter:</label>
+                <input type="number" id="total-cycles" min="1" step="1">
+            </div>
+
+            <div class="control-row duration-row">
+                <label class="duration-label">Inhale - Hold - Exhale:</label>
+                <div class="duration-inputs">
+                    <input type="number" id="inhale-duration" min="1" step="1" aria-label="Inhale duration">
+                    <input type="number" id="hold-duration" min="0" step="1" aria-label="Hold duration">
+                    <input type="number" id="exhale-duration" min="1" step="1" aria-label="Exhale duration">
+                </div>
+            </div>
+            
+            <div class="control-row audio-row">
+                <label for="audio-toggle">Audio:</label>
+                <div class="custom-checkbox-wrapper">
+                    <input type="checkbox" id="audio-toggle" checked>
+                    <label for="audio-toggle" class="custom-checkbox-label"></label> 
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cycle-counter-container">
+        <p id="cycle-counter-text"></p>
+        <p id="duration-display-text"></p>
+    </div>
+    <div id="circle">
+        <svg id="hold-wipe-svg" viewBox="0 0 100 100">
+            <circle id="hold-wipe-path" cx="50" cy="50" r="48" />
+        </svg>
+    </div>
+
+    <audio id="inhale-audio" src="audio/inhale-1.mp3" preload="auto"></audio>
+    <audio id="hold-audio" src="audio/hold-1.mp3" preload="auto"></audio>
+    <audio id="exhale-audio" src="audio/exhale-1.mp3" preload="auto"></audio>
+    <audio id="end-audio" src="audio/end-1.mp3" preload="auto"></audio>
+
+    <script src="script.js"></script>
+</body>
+</html> 
