@@ -122,6 +122,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', initializeAndUnlockAudio, { once: true });
     document.addEventListener('touchstart', initializeAndUnlockAudio, { once: true });
 
+    // Initialize audio immediately when the page loads
+    initializeAndUnlockAudio();
+
     function openSettingsModal() {
         if (settingsModal && modalOverlay) {
             settingsModal.classList.add('active');
@@ -387,14 +390,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (circleElement && inhaleInput && holdInput && exhaleInput && totalCyclesInput && cycleCounterTextElement && durationDisplayTextElement && cycleCounterContainerElement && settingsModal && modalOverlay && closeModalBtn && holdWipePathElement) {
         circleElement.addEventListener('click', () => {
+            // Ensure audio is initialized before starting the breath cycle
+            initializeAndUnlockAudio();
+            
             if (isAnimating) {
                 resetAnimationState();
             } else {
                 isAnimating = true;
                 currentCycleCount = 0; 
                 updateAnimation(); 
-                // triggerSoundsForCycle() is now called within updateAnimation when isAnimating is true
-                // and after main animation class is re-applied.
             }
         });
 
