@@ -16,7 +16,7 @@ body {
 }
 
 #circle {
-  background-color: rgba(255, 255, 255, 0.80);
+  background-color: rgba(255, 255, 255, 1);
   /* Responsive sizing: target 35vh, but ensure scaled size (1.4x) is max 90vw */
   /* So, base size should be max (90vw / 1.4) = ~64.2857vw */
   width: min(35vh, 64.2857vw);
@@ -25,81 +25,10 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%); /* Ensures scaling is from the center */
   cursor: pointer;
-}
-
-#circle.breathing {
-  animation-name: breathing-circle;
-  animation-duration: 11s; /* Initial total duration, will be updated by JS */
-  animation-iteration-count: infinite;
-  animation-timing-function: ease-out; /* Changed from linear for more natural easing */
-}
-
-@keyframes breathing-circle {
-  0%   { transform: translate(-50%, -50%) scale(0.05); } /* Start very small */
-  /* Keyframe percentages below will be dynamically updated by JavaScript */
-  30%  { transform: translate(-50%, -50%) scale(1.4); }  /* Default End Inhale / Start Hold */
-  60%  { transform: translate(-50%, -50%) scale(1.4); }  /* Default Default End Hold / Start Exhale */
-  90%  { transform: translate(-50%, -50%) scale(0.05); }  /* Default End Exhale */
-  100% { transform: translate(-50%, -50%) scale(0.05); }  /* Cycle end */
-}
-
-/* All CSS related to .popup, #inhale-message, #hold-message, #exhale-message, */
-/* and keyframes inh-direction, hold-direction, exh-direction has been removed. */
-
-/* #exhale-message specific positioning override from user, might not be needed with new centering */
-/* #exhale-message {
-  left: 7%; 
-} */
-
-#circle.breathing #inhale-message {
-  color: rgb(253, 193, 140); /* Inhale color */
-  animation-name: inh-direction;
-  animation-duration: 11s;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
-}
-
-#circle.breathing #hold-message {
-  color: rgb(135, 206, 235); /* Hold color */
-  animation-name: hold-direction;
-  animation-duration: 11s;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
-}
-
-#circle.breathing #exhale-message {
-  color: rgb(255, 160, 122); /* Exhale color */
-  animation-name: exh-direction;
-  animation-duration: 11s;
-  animation-iteration-count: infinite;
-  animation-timing-function: linear;
-}
-
-@keyframes inh-direction {
-  0%   { opacity: 1; }
-  6%   { opacity: 1; } /* Stay visible for a short duration */
-  30%  { opacity: 0; } /* Slowly fade out during the rest of inhale */
-  100% { opacity: 0; } /* Ensure it stays off */
-}
-
-@keyframes hold-direction {
-  0%   { opacity: 0; }
-  30%  { opacity: 0; } /* Start fading in at the beginning of hold phase */
-  42%  { opacity: 1; } /* Slowly fade in */
-  48%  { opacity: 1; } /* Stay visible */
-  60%  { opacity: 0; } /* Slowly fade out */
-  100% { opacity: 0; } /* Ensure it stays off */
-}
-
-@keyframes exh-direction {
-  0%   { opacity: 0; }
-  60%  { opacity: 0; } /* Start fading in at the beginning of exhale phase */
-  72%  { opacity: 1; } /* Slowly fade in */
-  78%  { opacity: 1; } /* Stay visible */
-  90%  { opacity: 0; } /* Slowly fade out */
-  100% { opacity: 0; } /* Ensure it stays off */
+  z-index: 1; /* Ensure circle is above the wipe SVG */
+  /* transition for transform is now set by JS in script.js */
 }
 
 .controls {
@@ -163,9 +92,6 @@ body {
     color: rgba(255, 255, 255, 0.70);
     margin-top: 5px; /* Space below the cycle counter */
 }
-
-/* All CSS related to .popup, #inhale-message, #hold-message, #exhale-message, */
-/* and keyframes inh-direction, hold-direction, exh-direction has been removed. */
 
 #settings-icon-container {
     position: fixed;
@@ -392,15 +318,14 @@ body {
     height: 105%;
     transform: translate(-50%, -50%) rotate(-90deg); /* Center and rotate for clockwise start from top */
     overflow: visible; /* Allow stroke to exceed viewbox if needed, though r=48 in 0 0 100 100 is fine */
-    z-index: -1; /* Behind the main circle content if any, though circle is just background */
+    z-index: -1; /* Ensure wipe SVG is behind the circle */
 }
 
 #hold-wipe-path {
     fill: none;
-    stroke: #FFFFFF; /* White color for the wipe */
-    stroke-width: 3; /* Adjust thickness as needed, relative to viewbox */
-    stroke-opacity: 0; /* Initially hidden, opacity controlled by its animation */
-    /* stroke-dasharray and stroke-dashoffset will be set by JS */
+    stroke: rgba(255, 255, 255, 0.4); /* White, more translucent than circle */
+    stroke-width: 5; /* Adjust for desired thickness */
+    transform-origin: center center;
 }
 
 /* Apply wipe animation when main circle is breathing */

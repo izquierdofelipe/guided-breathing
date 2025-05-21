@@ -8,15 +8,13 @@
 // const endAudio = document.getElementById('end-audio');
 
 // Variables that need to be shared or managed:
-// - isAudioEnabled
+// - isAudioEnabled (managed in script.js)
 // - audioInitialized
-// - holdSoundTimeoutId, exhaleSoundTimeoutId
-// - TRANSITION_TIME (from main script)
-// - effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime (from main script)
+// - TRANSITION_TIME (managed in script.js)
+// - effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime (managed in script.js)
 
-let audioInitialized = false; // Keep this local to this module if possible
-let holdSoundTimeoutId = null;
-let exhaleSoundTimeoutId = null;
+let audioInitialized = false; 
+// holdSoundTimeoutId, exhaleSoundTimeoutId are no longer needed.
 
 function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
     if (audioInitialized) return;
@@ -31,7 +29,7 @@ function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio)
     audioElements.forEach(item => {
         if (item.el) {
             item.el.volume = item.vol;
-            item.el.load();
+            item.el.load(); // Good practice to call load()
         }
     });
 
@@ -39,59 +37,37 @@ function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio)
     console.log("Audio elements initialized and unlocked on user interaction.");
 }
 
-function clearScheduledSounds() {
-    if (holdSoundTimeoutId) clearTimeout(holdSoundTimeoutId);
-    if (exhaleSoundTimeoutId) clearTimeout(exhaleSoundTimeoutId);
-    holdSoundTimeoutId = null;
-    exhaleSoundTimeoutId = null;
-}
+// clearScheduledSounds is REMOVED as timeouts are no longer used for scheduling cycle sounds.
 
-function stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
-    clearScheduledSounds();
+// Stops only the phase sounds (inhale, hold, exhale)
+function stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio) {
     if (inhaleAudio) { inhaleAudio.pause(); inhaleAudio.currentTime = 0; }
     if (holdAudio) { holdAudio.pause(); holdAudio.currentTime = 0; }
     if (exhaleAudio) { exhaleAudio.pause(); exhaleAudio.currentTime = 0; }
+    console.log("Phase sounds stopped and reset.");
+}
+
+function stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
+    // This function will be simplified. No scheduled sounds to clear.
+    // Call stopPhaseSounds to handle inhale, hold, exhale
+    stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
+    // Additionally handle endAudio
     if (endAudio) { endAudio.pause(); endAudio.currentTime = 0; } 
+    console.log("All sounds (including end sound) stopped and reset.");
 }
 
 function playEndSound(isAudioEnabled, endAudio) {
+    // isAudioEnabled check is now done by the caller (startBreathingProcess)
+    // but keeping it here is a safe double-check if this function were ever called directly elsewhere.
     if (isAudioEnabled && endAudio) {
         endAudio.currentTime = 0;
         endAudio.play().catch(e => console.error("Error playing end audio:", e));
     }
 }
 
-function triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAudio, TRANSITION_TIME, effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime) {
-    clearScheduledSounds(); 
+// triggerSoundsForCycle is REMOVED.
 
-    if (!isAudioEnabled || !audioInitialized) return;
-
-    if (inhaleAudio) {
-        inhaleAudio.currentTime = 0;
-        inhaleAudio.play().catch(e => console.error("Error playing inhale audio:", e));
-    }
-
-    if (holdAudio && effectiveHoldTime > 0) {
-        holdSoundTimeoutId = setTimeout(() => {
-            holdAudio.currentTime = 0;
-            holdAudio.play().catch(e => console.error("Error playing hold audio:", e));
-        }, (TRANSITION_TIME + effectiveInhaleTime) * 1000);
-    }
-
-    if (exhaleAudio && effectiveExhaleTime > 0) {
-        exhaleSoundTimeoutId = setTimeout(() => {
-            exhaleAudio.currentTime = 0;
-            exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
-        }, (TRANSITION_TIME + effectiveInhaleTime + TRANSITION_TIME + effectiveHoldTime) * 1000);
-    }
-}
-
-// New function to stop only active cycle sounds and clear their schedules
-function stopCurrentCycleSoundsAndClearSchedule(inhaleAudio, holdAudio, exhaleAudio) {
-    clearScheduledSounds(); // Clears holdSoundTimeoutId, exhaleSoundTimeoutId
-    if (inhaleAudio) { inhaleAudio.pause(); inhaleAudio.currentTime = 0; }
-    if (holdAudio) { holdAudio.pause(); holdAudio.currentTime = 0; }
-    if (exhaleAudio) { exhaleAudio.pause(); exhaleAudio.currentTime = 0; }
-}
+// stopCurrentCycleSoundsAndClearSchedule is REMOVED.
 
 // Add any necessary exports if using a module system. 
+// For now, assuming global scope for these functions. If script.js uses them, they must be available. 
