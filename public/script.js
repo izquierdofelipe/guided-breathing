@@ -10,6 +10,7 @@ function wait(durationInMs) {
 }
 
 let isProcessRunning = false; // Flag to control the execution of startBreathingProcess
+let activeProcessController = null; // Ensures only the latest process runs
 
 document.addEventListener('DOMContentLoaded', () => {
     const circleElement = document.getElementById('circle');
@@ -50,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalCycles = currentSettings.totalCycles;
 
     let isAudioEnabled = currentSettings.audioEnabled;
-    let isAnimating = false;
+    let isAnimating = false; // Used by click handler to toggle start/stop intent
     let currentCycleCount = 0;
 
     if (circleElement) {
@@ -76,22 +77,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function startBreathingProcess() {
         if (isProcessRunning) {
-            console.warn("startBreathingProcess called while already running.");
+            console.warn("startBreathingProcess called while isProcessRunning was true; returning to prevent overlap.");
             return;
         }
-        isProcessRunning = true;
-        // isAnimating will be set by the caller (e.g. click handler)
+        isProcessRunning = true; // Mark that a process is now officially trying to run
+        isAnimating = true;      // Update intent flag
 
-        // Ensure audio is initialized (important if user clicks start without prior interaction)
-        // This is already called on DOMContentLoaded, but good to have if start is first interaction point.
+        const myId = Symbol('processId'); // Unique ID for this specific run
+        activeProcessController = myId;   // This instance is now the active one
+
         initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
 
-        currentCycleCount = 0; // Reset for this new process
+        currentCycleCount = 0;
 
-        while (currentCycleCount < totalCycles && isProcessRunning) {
-            currentCycleCount++; // Increment at the start of the cycle
-            if (isProcessRunning) updateCycleCounterDisplay(); // Update display if still running
-            if (!isProcessRunning) break;
+        while (currentCycleCount < totalCycles && activeProcessController === myId) {
+            currentCycleCount++;
+            if (activeProcessController !== myId) break;
+            updateCycleCounterDisplay();
+            if (activeProcessController !== myId) break;
 
             // --------- Inhale Phase ---------
             console.log("Inhale for", effectiveInhaleTime, "seconds.");
@@ -104,35 +107,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 inhaleAudio.play().catch(e => console.error("Error playing inhale audio:", e));
             }
             await wait(effectiveInhaleTime * 1000);
-            if (!isProcessRunning) break;
-            // Visual transition to Hold (expansion finishes here)
+            if (activeProcessController !== myId) break;
 
             // --------- Hold Phase ---------
             console.log("Hold for", effectiveHoldTime, "seconds.");
-            // Circle scale remains MAX_SCALE
             if (isAudioEnabled && holdAudio) {
                 holdAudio.currentTime = 0;
                 holdAudio.play().catch(e => console.error("Error playing hold audio:", e));
             }
 
             if (holdWipePathElement) {
-                // Simplified placeholder for wipe activation
                 holdWipePathElement.style.strokeOpacity = '1';
-                holdWipePathElement.style.transition = 'stroke-dashoffset 0s linear'; // Ensure immediate change for start
+                holdWipePathElement.style.transition = 'stroke-dashoffset 0s linear';
                 holdWipePathElement.style.strokeDashoffset = String(wipeCircumference);
-                void holdWipePathElement.offsetWidth; // Force reflow
+                void holdWipePathElement.offsetWidth;
                 holdWipePathElement.style.transition = `stroke-dashoffset ${effectiveHoldTime}s linear`;
                 holdWipePathElement.style.strokeDashoffset = '0';
-                console.log("Wipe animation would run for", effectiveHoldTime, "seconds");
             }
             await wait(effectiveHoldTime * 1000);
-            if (!isProcessRunning) break;
-            if (holdWipePathElement) { // Reset wipe after hold
+            if (activeProcessController !== myId) break;
+            if (holdWipePathElement) {
                 holdWipePathElement.style.transition = 'stroke-dashoffset 0s linear';
                 holdWipePathElement.style.strokeOpacity = '0';
                 holdWipePathElement.style.strokeDashoffset = String(wipeCircumference);
             }
-            // Visual transition from Hold to Exhale (hold finishes here)
 
             // --------- Exhale Phase ---------
             console.log("Exhale for", effectiveExhaleTime, "seconds.");
@@ -145,28 +143,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
             }
             await wait(effectiveExhaleTime * 1000);
-            if (!isProcessRunning) break;
-            // Visual transition to Inhale (shrink finishes here, ready for next cycle or end)
+            if (activeProcessController !== myId) break;
         }
 
-        if (isProcessRunning) { // Completed naturally (not aborted)
-            console.log("Breathing excercise completed naturally.");
-            if (currentCycleCount >= totalCycles) {
+        if (activeProcessController === myId) { // If I was the one that completed or was last active
+            activeProcessController = null;     // Clear myself as active
+            if (currentCycleCount >= totalCycles && isProcessRunning) { // Check isProcessRunning to ensure it wasn't reset externally
+                console.log("Breathing exercise completed naturally.");
                 playEndSound(isAudioEnabled, endAudio);
+                resetAnimationState(); // Resets isAnimating and isProcessRunning to false
+            } else if (isProcessRunning) { 
+                // If loop was broken by activeProcessController change but this instance was still 'myId' (unlikely)
+                // or if totalCycles was not met but loop ended.
+                // Ensure clean state if resetAnimationState wasn't called.
+                isProcessRunning = false;
+                isAnimating = false;
             }
         }
-        // If aborted, isProcessRunning would be false.
-        // The function that set isProcessRunning to false (e.g. via resetAnimationState) is responsible for UI cleanup.
-
-        isProcessRunning = false;
-        // The main isAnimating flag should be managed by the caller that initiated stop, or by resetAnimationState.
-        // If the loop finished naturally, the app should return to an idle, non-animating state.
-        // This will be handled by resetAnimationState called from the click handler or settings update logic.
-        // For safety, if it finished naturally and isAnimating is still true, call resetAnimationState.
-        if (isAnimating && currentCycleCount >= totalCycles) {
-            console.log("startBreathingProcess completed naturally, ensuring reset.");
-            resetAnimationState(); // This will set isAnimating and isProcessRunning to false.
-        }
+        // If the loop exited because activeProcessController !== myId, it means resetAnimationState 
+        // (which sets isProcessRunning = false) or another process took over.
+        // No specific cleanup for isProcessRunning needed here for that case, resetAnimationState handles it.
     }
 
     function updateCycleCounterDisplay() {
@@ -181,8 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetAnimationState() {
         console.log("resetAnimationState called.");
+        activeProcessController = null; // Crucial: stop any ongoing process controlled by ID
         isAnimating = false;
-        isProcessRunning = false; // Ensure the async loop is signalled to stop
+        isProcessRunning = false; // Ensure this is set false
         currentCycleCount = 0;
 
         if (circleElement) {
@@ -249,24 +246,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (circleElement && inhaleInput && holdInput && exhaleInput && totalCyclesInput && cycleCounterTextElement && durationDisplayTextElement && cycleCounterContainerElement && settingsModal && modalOverlay && closeModalBtn && holdWipePathElement) {
         circleElement.addEventListener('click', () => {
-            // Ensure audio is initialized on first significant user interaction if not already.
             initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
             
-            if (isAnimating) { // Clicking to stop animation
-                console.log("Circle clicked: Stopping animation.");
-                isAnimating = false;        // Set primary animation flag to false
-                isProcessRunning = false;   // Signal the async loop to stop
-                resetAnimationState();      // Reset UI and state variables
-            } else { // Clicking to start animation
-                console.log("Circle clicked: Starting animation.");
-                isAnimating = true;        // Set primary animation flag to true
+            if (isAnimating) { // If current intent is animating, click means STOP
+                console.log("Circle clicked: Stopping animation (intent was animating).");
+                // resetAnimationState will handle setting isAnimating, isProcessRunning to false,
+                // and activeProcessController to null.
+                resetAnimationState();
+            } else { // If current intent is not animating, click means START
+                console.log("Circle clicked: Starting animation (intent was not animating).");
+                updateAnimation(false); // Load settings. isAnimating and isProcessRunning are currently false.
                 
-                // Ensure current settings are applied before starting
-                // This call with 'false' will update effectiveTimes and totalCycles from inputs,
-                // but will not call resetAnimationState() itself.
-                updateAnimation(false); 
-                
-                // Start the asynchronous breathing process
+                // startBreathingProcess will set isAnimating = true, isProcessRunning = true (if it proceeds),
+                // and establish the new activeProcessController.
                 startBreathingProcess(); 
             }
         });
