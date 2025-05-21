@@ -12,11 +12,6 @@ function wait(durationInMs) {
 let isProcessRunning = false; // Flag to control the execution of startBreathingProcess
 
 document.addEventListener('DOMContentLoaded', () => {
-    const TRANSITION_TIME_S = 0.5; // Transition time in seconds, matching CSS
-    const TRANSITION_TIME_MS = TRANSITION_TIME_S * 1000; // Transition time in milliseconds
-
-    const APP_SETTINGS_KEY = 'breathingAppSettings'; // Already in settings.js but may be used here too
-
     const circleElement = document.getElementById('circle');
     const inhaleInput = document.getElementById('inhale-duration');
     const holdInput = document.getElementById('hold-duration');
@@ -58,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentCycleCount = 0;
 
     if (circleElement) {
-        circleElement.style.transition = `transform ${TRANSITION_TIME_S}s ease-in-out`;
+        circleElement.style.transition = `transform 1s ease-in-out`;
         circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
     }
 
@@ -99,16 +94,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --------- Inhale Phase ---------
             console.log("Inhale for", effectiveInhaleTime, "seconds.");
-            if (circleElement) circleElement.style.transform = `translate(-50%, -50%) scale(${MAX_SCALE})`;
+            if (circleElement) {
+                circleElement.style.transition = `transform ${effectiveInhaleTime}s ease-in-out`;
+                circleElement.style.transform = `translate(-50%, -50%) scale(${MAX_SCALE})`;
+            }
             if (isAudioEnabled && inhaleAudio) {
                 inhaleAudio.currentTime = 0;
                 inhaleAudio.play().catch(e => console.error("Error playing inhale audio:", e));
             }
             await wait(effectiveInhaleTime * 1000);
             if (!isProcessRunning) break;
-            // Visual transition to Hold (expansion finishes here due to CSS transition)
-            await wait(TRANSITION_TIME_MS);
-            if (!isProcessRunning) break;
+            // Visual transition to Hold (expansion finishes here)
 
             // --------- Hold Phase ---------
             console.log("Hold for", effectiveHoldTime, "seconds.");
@@ -136,12 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 holdWipePathElement.style.strokeDashoffset = String(wipeCircumference);
             }
             // Visual transition from Hold to Exhale (hold finishes here)
-            await wait(TRANSITION_TIME_MS);
-            if (!isProcessRunning) break;
 
             // --------- Exhale Phase ---------
             console.log("Exhale for", effectiveExhaleTime, "seconds.");
-            if (circleElement) circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
+            if (circleElement) {
+                circleElement.style.transition = `transform ${effectiveExhaleTime}s ease-in-out`;
+                circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
+            }
             if (isAudioEnabled && exhaleAudio) {
                 exhaleAudio.currentTime = 0;
                 exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
@@ -149,8 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             await wait(effectiveExhaleTime * 1000);
             if (!isProcessRunning) break;
             // Visual transition to Inhale (shrink finishes here, ready for next cycle or end)
-            await wait(TRANSITION_TIME_MS);
-            if (!isProcessRunning) break;
         }
 
         if (isProcessRunning) { // Completed naturally (not aborted)
@@ -190,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentCycleCount = 0;
 
         if (circleElement) {
+            circleElement.style.transition = `transform 1s ease-in-out`; // Explicitly set transition for reset
             circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
         }
         
@@ -300,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         updateAnimation(false); 
+        updateCycleCounterDisplay();
 
     } else {
         console.error('One or more required elements were not found.');
