@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const INITIAL_SCALE = 0.05;
     const MAX_SCALE = 1.4;
+    const RESTING_SCALE = 0.725; // New scale for idle state
 
     let effectiveInhaleTime = currentSettings.inhaleTime;
     let effectiveHoldTime = currentSettings.holdTime;
@@ -54,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (circleElement) {
         circleElement.style.transition = `transform 1s ease-in-out`;
-        circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
+        circleElement.style.transform = `translate(-50%, -50%) scale(${RESTING_SCALE})`; // Use RESTING_SCALE
     }
 
     const wipeRadius = holdWipePathElement ? parseFloat(holdWipePathElement.getAttribute('r')) : 0;
@@ -186,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (circleElement) {
             circleElement.style.transition = `transform 1s ease-in-out`; // Explicitly set transition for reset
-            circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
+            circleElement.style.transform = `translate(-50%, -50%) scale(${RESTING_SCALE})`; // Use RESTING_SCALE
         }
         
         stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio); // Use the new function from audio.js
