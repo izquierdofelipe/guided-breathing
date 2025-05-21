@@ -56,10 +56,8 @@ function stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
 
 function playEndSound(isAudioEnabled, endAudio) {
     if (isAudioEnabled && endAudio) {
-        setTimeout(() => {
-            endAudio.currentTime = 0;
-            endAudio.play().catch(e => console.error("Error playing end audio:", e));
-        }, 100);
+        endAudio.currentTime = 0;
+        endAudio.play().catch(e => console.error("Error playing end audio:", e));
     }
 }
 
@@ -86,6 +84,14 @@ function triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAud
             exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
         }, (TRANSITION_TIME + effectiveInhaleTime + TRANSITION_TIME + effectiveHoldTime) * 1000);
     }
+}
+
+// New function to stop only active cycle sounds and clear their schedules
+function stopCurrentCycleSoundsAndClearSchedule(inhaleAudio, holdAudio, exhaleAudio) {
+    clearScheduledSounds(); // Clears holdSoundTimeoutId, exhaleSoundTimeoutId
+    if (inhaleAudio) { inhaleAudio.pause(); inhaleAudio.currentTime = 0; }
+    if (holdAudio) { holdAudio.pause(); holdAudio.currentTime = 0; }
+    if (exhaleAudio) { exhaleAudio.pause(); exhaleAudio.currentTime = 0; }
 }
 
 // Add any necessary exports if using a module system. 

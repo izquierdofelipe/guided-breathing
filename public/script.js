@@ -130,12 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
         isAnimating = false;
         currentCycleCount = 0;
         circleElement.classList.remove('breathing');
-        stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio); // Pass audio elements
+        stopCurrentCycleSoundsAndClearSchedule(inhaleAudio, holdAudio, exhaleAudio);
         if (holdWipePathElement) {
             holdWipePathElement.style.animationName = 'none'; // Stop wipe animation
             holdWipePathElement.style.strokeDashoffset = wipeCircumference; // Reset its visual state
         }
         updateCycleCounterDisplay();
+        updateDurationDisplay();
     }
 
     function forceRestartWipeAnimation() {
@@ -169,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    function updateAnimation() {
+    function updateAnimation(shouldStopAndReset = false) {
         effectiveInhaleTime = parseInt(inhaleInput.value, 10) || DEFAULT_INHALE_TIME;
         effectiveHoldTime = parseInt(holdInput.value, 10) || DEFAULT_HOLD_TIME;
         effectiveExhaleTime = parseInt(exhaleInput.value, 10) || DEFAULT_EXHALE_TIME;
@@ -252,69 +253,94 @@ document.addEventListener('DOMContentLoaded', () => {
         
         circleElement.style.animationDuration = `${newTotalDuration}s`;
 
-        updateCycleCounterDisplay();
         updateDurationDisplay();
 
-        if (isAnimating) {
-            if (currentCycleCount >= totalCycles) {
-                stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio); // Pass audio elements
-                playEndSound(isAudioEnabled, endAudio); // Pass isAudioEnabled and endAudio
-                resetAnimationState();
-            } else {
-                circleElement.classList.remove('breathing');
-                void circleElement.offsetWidth; 
-                circleElement.classList.add('breathing');
-                if (isAudioEnabled) triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAudio, TRANSITION_TIME, effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime); // Pass parameters
-                forceRestartWipeAnimation(); 
-            }
+        if (shouldStopAndReset) {
+            resetAnimationState();
         } else {
-            if (holdWipePathElement) {
-                holdWipePathElement.style.animationName = 'none';
-                holdWipePathElement.style.strokeDashoffset = String(wipeCircumference); 
-                holdWipePathElement.style.strokeOpacity = '0';
+            updateCycleCounterDisplay();
+
+            if (isAnimating) {
+                if (currentCycleCount >= totalCycles) {
+                    // All cycles done (e.g. if totalCycles was reduced below currentCycleCount)
+                    stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio); 
+                    playEndSound(isAudioEnabled, endAudio); 
+                    resetAnimationState();
+                } else {
+                    // Animation is running and settings might have changed, or it's a fresh start.
+                    // Restart the current cycle with new timings.
+                    stopCurrentCycleSoundsAndClearSchedule(inhaleAudio, holdAudio, exhaleAudio);
+                    circleElement.classList.remove('breathing');
+                    void circleElement.offsetWidth; 
+                    circleElement.classList.add('breathing');
+                    if (isAudioEnabled) {
+                        triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAudio, TRANSITION_TIME, effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime);
+                    }
+                    forceRestartWipeAnimation(); 
+                }
+            } else {
+                // Not animating and not told to reset (e.g., initial load)
+                // Ensure wipe animation is reset visually if it exists
+                if (holdWipePathElement) {
+                    holdWipePathElement.style.animationName = 'none';
+                    holdWipePathElement.style.strokeDashoffset = String(wipeCircumference); 
+                    holdWipePathElement.style.strokeOpacity = '0';
+                }
             }
         }
     }
 
     if (circleElement && inhaleInput && holdInput && exhaleInput && totalCyclesInput && cycleCounterTextElement && durationDisplayTextElement && cycleCounterContainerElement && settingsModal && modalOverlay && closeModalBtn && holdWipePathElement) {
         circleElement.addEventListener('click', () => {
-            // Ensure audio is initialized before starting the breath cycle
-            initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio); // Pass audio elements
+            initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
             
             if (isAnimating) {
-                resetAnimationState();
+                resetAnimationState(); 
             } else {
                 isAnimating = true;
                 currentCycleCount = 0; 
-                updateAnimation(); 
+                updateCycleCounterDisplay(); // Show 0/X immediately
+                updateAnimation(false); // Start animation with current settings, no reset
             }
         });
 
         circleElement.addEventListener('animationiteration', () => {
             if (!isAnimating) {
-                return;
+                return; // Animation was stopped, do nothing
             }
+
             currentCycleCount++;
             updateCycleCounterDisplay();
+
             if (currentCycleCount >= totalCycles) {
-                stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio); // Pass audio elements
-                playEndSound(isAudioEnabled, endAudio); // Pass isAudioEnabled and endAudio
-                resetAnimationState();
+                // All animation cycles completed through iteration.
+                // Stop all sounds (including any lingering cycle sounds) before playing the final end sound.
+                stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio);
+                playEndSound(isAudioEnabled, endAudio);
+                resetAnimationState(); // Reset animation and visual state.
             } else {
-                if (isAudioEnabled) triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAudio, TRANSITION_TIME, effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime); // Pass parameters
+                // Moving to the next iteration of the same animation configuration.
+                // Stop sounds from the iteration that just completed.
+                stopCurrentCycleSoundsAndClearSchedule(inhaleAudio, holdAudio, exhaleAudio);
+                
+                // Trigger sounds for the new iteration.
+                if (isAudioEnabled) {
+                    triggerSoundsForCycle(isAudioEnabled, inhaleAudio, holdAudio, exhaleAudio, TRANSITION_TIME, effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime);
+                }
+                // Restart the wipe animation for the hold phase of the new iteration.
                 forceRestartWipeAnimation(); 
             }
         });
 
         [inhaleInput, holdInput, exhaleInput, totalCyclesInput].forEach(input => {
-            input.addEventListener('change', updateAnimation);
+            input.addEventListener('change', () => updateAnimation(true));
         });
 
         if (audioToggleCheckbox) {
             audioToggleCheckbox.addEventListener('change', (event) => {
                 isAudioEnabled = event.target.checked;
                 if (!isAudioEnabled) {
-                    stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio); // Pass audio elements
+                    stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio);
                 }
                 // Save settings when audio toggle changes
                 saveSettings({
@@ -329,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isAudioEnabled = audioToggleCheckbox.checked; // This was already here, ensure it aligns with loaded settings
         }
 
-        updateAnimation(); // Initial setup
+        updateAnimation(false); // Initial setup, no reset
 
     } else {
         console.error('One or more required elements were not found.');
@@ -340,6 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial call to set up based on current time or defaults
     if (typeof updateAnimation === "function") {
-        updateAnimation(); // Ensure breathing animation settings and displays are also initialized.
+        updateAnimation(false); // Ensure breathing animation settings and displays are also initialized, no reset.
     }
 }); 
