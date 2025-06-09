@@ -4,6 +4,14 @@ import path from 'path';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Redirect HTTP to HTTPS
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(`https://${req.hostname}${req.url}`);
+  }
+  next();
+});
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
