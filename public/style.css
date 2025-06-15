@@ -358,7 +358,7 @@ body {
 /* Minimalist Accountability Table */
 #accountability-container {
     position: fixed;
-    bottom: 20px;
+    bottom: 8%;
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
