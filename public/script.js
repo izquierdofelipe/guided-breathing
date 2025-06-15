@@ -99,30 +99,22 @@ document.addEventListener('DOMContentLoaded', () => {
             // --------- Inhale Phase ---------
             console.log("Inhale for", effectiveInhaleTime, "seconds.");
             
-            // Stop any previous audio before starting inhale
-            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
-            
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveInhaleTime}s ease-in-out`;
                 circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${MAX_SCALE})`;
             }
-            if (isAudioEnabled && inhaleAudio) {
-                // Use the enhanced audio playing function
-                safelyPlayAudio(inhaleAudio, 'inhale').catch(e => console.error("Failed to play inhale audio:", e));
-            }
+            
+            // Play inhale audio with new system
+            playAudioPhase('inhale', isAudioEnabled);
+            
             await wait(effectiveInhaleTime * 1000);
             if (activeProcessController !== myId) break;
 
             // --------- Hold Phase ---------
             console.log("Hold for", effectiveHoldTime, "seconds.");
             
-            // Stop any previous audio before starting hold
-            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
-            
-            if (isAudioEnabled && holdAudio) {
-                // Use the enhanced audio playing function
-                safelyPlayAudio(holdAudio, 'hold').catch(e => console.error("Failed to play hold audio:", e));
-            }
+            // Play hold audio with new system
+            playAudioPhase('hold', isAudioEnabled);
 
             if (holdWipePathElement) {
                 holdWipePathElement.style.strokeOpacity = '1';
@@ -143,17 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // --------- Exhale Phase ---------
             console.log("Exhale for", effectiveExhaleTime, "seconds.");
             
-            // Stop any previous audio before starting exhale
-            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
-            
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveExhaleTime}s ease-in-out`;
                 circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${INITIAL_SCALE})`;
             }
-            if (isAudioEnabled && exhaleAudio) {
-                // Use the enhanced audio playing function
-                safelyPlayAudio(exhaleAudio, 'exhale').catch(e => console.error("Failed to play exhale audio:", e));
-            }
+            
+            // Play exhale audio with new system
+            playAudioPhase('exhale', isAudioEnabled);
+            
             await wait(effectiveExhaleTime * 1000);
             if (activeProcessController !== myId) break;
         }
@@ -170,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await window.accountabilityModule.updateAccountabilityTable();
                 }
                 
-                playEndSound(isAudioEnabled, endAudio);
+                playEndSound(isAudioEnabled);
                 resetAnimationState(); // Resets isAnimating and isProcessRunning to false
             } else if (isProcessRunning) { 
                 // If loop was broken by activeProcessController change but this instance was still 'myId' (unlikely)
@@ -207,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
             circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${RESTING_SCALE})`; // GPU-accelerated
         }
         
-        stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio); // Use the new function from audio.js
+        stopAllAudio(); // Use the new simplified audio system
 
         if (holdWipePathElement) {
             holdWipePathElement.style.transition = 'stroke-dashoffset 0s linear'; 
@@ -300,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentSettings.audioEnabled = isAudioEnabled; 
                 saveSettings(currentSettings); 
                 if (!isAudioEnabled) {
-                    stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio); // Use the new function from audio.js
+                    stopAllAudio(); // Use the new simplified audio system
                     console.log("Audio toggled OFF, active phase sounds stopped.");
                 } else {
                     console.log("Audio toggled ON.");

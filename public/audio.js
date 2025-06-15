@@ -13,80 +13,152 @@
 // - TRANSITION_TIME (managed in script.js)
 // - effectiveInhaleTime, effectiveHoldTime, effectiveExhaleTime (managed in script.js)
 
-let audioInitialized = false; 
-// holdSoundTimeoutId, exhaleSoundTimeoutId are no longer needed.
+let audioInitialized = false;
+let mainAudioElement = null;
+
+// Audio sources for different phases
+const audioSources = {
+    inhale: 'audio/inhale/inhale-1.mp3',
+    hold: 'audio/hold/hold-1.mp3',
+    exhale: 'audio/exhale/exhale-1.mp3',
+    end: 'audio/end/end-1.mp3'
+};
 
 function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
     if (audioInitialized) return;
 
-    const audioElements = [
-        { el: inhaleAudio, vol: 0.6, name: 'inhale' },
-        { el: holdAudio, vol: 0.6, name: 'hold' },
-        { el: exhaleAudio, vol: 0.6, name: 'exhale' },
-        { el: endAudio, vol: 0.4, name: 'end' }
-    ];
+    // Create a single audio element for better mobile compatibility
+    if (!mainAudioElement) {
+        mainAudioElement = document.createElement('audio');
+        mainAudioElement.id = 'main-audio';
+        mainAudioElement.preload = 'none'; // Don't preload on mobile to avoid issues
+        mainAudioElement.volume = 0.6;
+        document.body.appendChild(mainAudioElement);
+        
+        console.log("Single audio element created for mobile compatibility");
+    }
 
-    audioElements.forEach(item => {
-        if (item.el) {
-            try {
-                // Set volume
-                item.el.volume = item.vol;
-                
-                // Set properties for better mobile compatibility
-                item.el.preload = 'auto'; // Try to preload
-                item.el.muted = false;
-                
-                // Force load the audio
-                item.el.load();
-                
-                // Add error listener
-                item.el.addEventListener('error', (e) => {
-                    console.error(`Error loading ${item.name} audio:`, e);
-                });
-                
-                // Add loaded listener
-                item.el.addEventListener('canplaythrough', () => {
-                    console.log(`${item.name} audio loaded and ready`);
-                }, { once: true });
-                
-                console.log(`${item.name} audio element initialized`);
-            } catch (error) {
-                console.error(`Error initializing ${item.name} audio:`, error);
+    // Try to unlock audio context on mobile
+    try {
+        // Play a silent audio to unlock the audio context
+        const unlockAudio = () => {
+            if (mainAudioElement) {
+                const playPromise = mainAudioElement.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        mainAudioElement.pause();
+                        mainAudioElement.currentTime = 0;
+                        console.log("Audio context unlocked successfully");
+                    }).catch(() => {
+                        // Ignore unlock errors, will try again later
+                    });
+                }
             }
-        } else {
-            console.warn(`${item.name} audio element not found`);
-        }
-    });
+        };
+
+        // Try to unlock immediately
+        unlockAudio();
+        
+        // Also try on next user interaction
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+        document.addEventListener('click', unlockAudio, { once: true });
+        
+    } catch (error) {
+        console.warn("Error unlocking audio context:", error);
+    }
 
     audioInitialized = true;
-    console.log("Audio elements initialized and unlocked on user interaction.");
+    console.log("Mobile-optimized audio system initialized");
 }
 
-// clearScheduledSounds is REMOVED as timeouts are no longer used for scheduling cycle sounds.
+// Simple, reliable audio playing function for mobile
+function playAudioPhase(phase, isAudioEnabled) {
+    return new Promise((resolve) => {
+        if (!isAudioEnabled || !mainAudioElement || !audioSources[phase]) {
+            console.log(`Skipping ${phase} audio (disabled or not available)`);
+            resolve();
+            return;
+        }
 
-// Stops only the phase sounds (inhale, hold, exhale)
-function stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio) {
-    if (inhaleAudio) { inhaleAudio.pause(); inhaleAudio.currentTime = 0; }
-    if (holdAudio) { holdAudio.pause(); holdAudio.currentTime = 0; }
-    if (exhaleAudio) { exhaleAudio.pause(); exhaleAudio.currentTime = 0; }
-    console.log("Phase sounds stopped and reset.");
+        console.log(`Playing ${phase} audio...`);
+        
+        // Stop any current audio
+        mainAudioElement.pause();
+        mainAudioElement.currentTime = 0;
+        
+        // Set the source for this phase
+        mainAudioElement.src = audioSources[phase];
+        
+        // Set up event listeners for this play attempt
+        const onEnded = () => {
+            console.log(`${phase} audio completed`);
+            cleanup();
+            resolve();
+        };
+        
+        const onError = (error) => {
+            console.log(`${phase} audio error (continuing):`, error);
+            cleanup();
+            resolve(); // Don't block breathing cycle on audio errors
+        };
+        
+        const onCanPlay = () => {
+            const playPromise = mainAudioElement.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log(`${phase} audio started successfully`);
+                }).catch(onError);
+            }
+        };
+        
+        const cleanup = () => {
+            mainAudioElement.removeEventListener('ended', onEnded);
+            mainAudioElement.removeEventListener('error', onError);
+            mainAudioElement.removeEventListener('canplay', onCanPlay);
+        };
+        
+        // Add event listeners
+        mainAudioElement.addEventListener('ended', onEnded, { once: true });
+        mainAudioElement.addEventListener('error', onError, { once: true });
+        
+        // Try to play immediately if ready, otherwise wait for canplay
+        if (mainAudioElement.readyState >= 2) {
+            onCanPlay();
+        } else {
+            mainAudioElement.addEventListener('canplay', onCanPlay, { once: true });
+            mainAudioElement.load(); // Force load
+        }
+        
+        // Safety timeout - don't wait forever
+        setTimeout(() => {
+            cleanup();
+            console.log(`${phase} audio safety timeout - continuing`);
+            resolve();
+        }, 1000); // Much shorter timeout for mobile
+    });
 }
 
-function stopAllSounds(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
-    // This function will be simplified. No scheduled sounds to clear.
-    // Call stopPhaseSounds to handle inhale, hold, exhale
-    stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
-    // Additionally handle endAudio
-    if (endAudio) { endAudio.pause(); endAudio.currentTime = 0; } 
-    console.log("All sounds (including end sound) stopped and reset.");
+// Stop all audio
+function stopAllAudio() {
+    if (mainAudioElement) {
+        mainAudioElement.pause();
+        mainAudioElement.currentTime = 0;
+        console.log("All audio stopped");
+    }
 }
 
-function playEndSound(isAudioEnabled, endAudio) {
-    // isAudioEnabled check is now done by the caller (startBreathingProcess)
-    // but keeping it here is a safe double-check if this function were ever called directly elsewhere.
-    if (isAudioEnabled && endAudio) {
-        endAudio.currentTime = 0;
-        endAudio.play().catch(e => console.error("Error playing end audio:", e));
+// Legacy functions for compatibility
+function stopPhaseSounds() {
+    stopAllAudio();
+}
+
+function stopAllSounds() {
+    stopAllAudio();
+}
+
+function playEndSound(isAudioEnabled) {
+    if (isAudioEnabled) {
+        playAudioPhase('end', isAudioEnabled);
     }
 }
 
