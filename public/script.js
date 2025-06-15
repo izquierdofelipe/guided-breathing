@@ -306,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.accountabilityModule.initializeAccountability();
     }
 
-    // Initialize stars system if available
-    if (window.starsModule) {
-        window.starsModule.initializeStars();
-    }
+    // Initialize stars system if available - TEMPORARILY DISABLED FOR TESTING
+    // if (window.starsModule) {
+    //     window.starsModule.initializeStars();
+    // }
 
     // Ensure initial updateAnimation call correctly sets up UI displays
     // updateAnimation(false); // This call might also interact with setHour and needs to be aware of manualHour - Already called above
