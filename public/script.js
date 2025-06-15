@@ -98,22 +98,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --------- Inhale Phase ---------
             console.log("Inhale for", effectiveInhaleTime, "seconds.");
+            
+            // Stop any previous audio before starting inhale
+            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
+            
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveInhaleTime}s ease-in-out`;
                 circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${MAX_SCALE})`;
             }
             if (isAudioEnabled && inhaleAudio) {
-                inhaleAudio.currentTime = 0;
-                inhaleAudio.play().catch(e => console.error("Error playing inhale audio:", e));
+                // Use the enhanced audio playing function
+                safelyPlayAudio(inhaleAudio, 'inhale').catch(e => console.error("Failed to play inhale audio:", e));
             }
             await wait(effectiveInhaleTime * 1000);
             if (activeProcessController !== myId) break;
 
             // --------- Hold Phase ---------
             console.log("Hold for", effectiveHoldTime, "seconds.");
+            
+            // Stop any previous audio before starting hold
+            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
+            
             if (isAudioEnabled && holdAudio) {
-                holdAudio.currentTime = 0;
-                holdAudio.play().catch(e => console.error("Error playing hold audio:", e));
+                // Use the enhanced audio playing function
+                safelyPlayAudio(holdAudio, 'hold').catch(e => console.error("Failed to play hold audio:", e));
             }
 
             if (holdWipePathElement) {
@@ -134,13 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --------- Exhale Phase ---------
             console.log("Exhale for", effectiveExhaleTime, "seconds.");
+            
+            // Stop any previous audio before starting exhale
+            stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio);
+            
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveExhaleTime}s ease-in-out`;
                 circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${INITIAL_SCALE})`;
             }
             if (isAudioEnabled && exhaleAudio) {
-                exhaleAudio.currentTime = 0;
-                exhaleAudio.play().catch(e => console.error("Error playing exhale audio:", e));
+                // Use the enhanced audio playing function
+                safelyPlayAudio(exhaleAudio, 'exhale').catch(e => console.error("Failed to play exhale audio:", e));
             }
             await wait(effectiveExhaleTime * 1000);
             if (activeProcessController !== myId) break;

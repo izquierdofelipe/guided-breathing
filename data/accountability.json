@@ -5,7 +5,7 @@
     "evening": false
   },
   "Felipe": {
-    "morning": false,
+    "morning": true,
     "midday": false,
     "evening": false
   }

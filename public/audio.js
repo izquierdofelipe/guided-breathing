@@ -20,16 +20,41 @@ function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio)
     if (audioInitialized) return;
 
     const audioElements = [
-        { el: inhaleAudio, vol: 0.6 },
-        { el: holdAudio, vol: 0.6 },
-        { el: exhaleAudio, vol: 0.6 },
-        { el: endAudio, vol: 0.4 }
+        { el: inhaleAudio, vol: 0.6, name: 'inhale' },
+        { el: holdAudio, vol: 0.6, name: 'hold' },
+        { el: exhaleAudio, vol: 0.6, name: 'exhale' },
+        { el: endAudio, vol: 0.4, name: 'end' }
     ];
 
     audioElements.forEach(item => {
         if (item.el) {
-            item.el.volume = item.vol;
-            item.el.load(); // Good practice to call load()
+            try {
+                // Set volume
+                item.el.volume = item.vol;
+                
+                // Set properties for better mobile compatibility
+                item.el.preload = 'auto'; // Try to preload
+                item.el.muted = false;
+                
+                // Force load the audio
+                item.el.load();
+                
+                // Add error listener
+                item.el.addEventListener('error', (e) => {
+                    console.error(`Error loading ${item.name} audio:`, e);
+                });
+                
+                // Add loaded listener
+                item.el.addEventListener('canplaythrough', () => {
+                    console.log(`${item.name} audio loaded and ready`);
+                }, { once: true });
+                
+                console.log(`${item.name} audio element initialized`);
+            } catch (error) {
+                console.error(`Error initializing ${item.name} audio:`, error);
+            }
+        } else {
+            console.warn(`${item.name} audio element not found`);
         }
     });
 
@@ -68,6 +93,81 @@ function playEndSound(isAudioEnabled, endAudio) {
 // triggerSoundsForCycle is REMOVED.
 
 // stopCurrentCycleSoundsAndClearSchedule is REMOVED.
+
+// Enhanced function to safely play audio with mobile-specific handling
+function safelyPlayAudio(audioElement, audioName) {
+    if (!audioElement) {
+        console.warn(`${audioName} audio element not found`);
+        return Promise.resolve();
+    }
+    
+    return new Promise((resolve, reject) => {
+        // First, stop and reset the audio
+        audioElement.pause();
+        audioElement.currentTime = 0;
+        
+        let timeoutId;
+        let isResolved = false;
+        
+        // Add event listeners for this play attempt
+        const onPlay = () => {
+            if (isResolved) return;
+            isResolved = true;
+            console.log(`${audioName} audio started playing successfully`);
+            cleanup();
+            resolve();
+        };
+        
+        const onError = (error) => {
+            if (isResolved) return;
+            isResolved = true;
+            console.error(`Error playing ${audioName} audio:`, error);
+            cleanup();
+            reject(error);
+        };
+        
+        const onCanPlay = () => {
+            // Audio is ready to play
+            audioElement.play()
+                .then(onPlay)
+                .catch(onError);
+        };
+        
+        const cleanup = () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                timeoutId = null;
+            }
+            audioElement.removeEventListener('canplay', onCanPlay);
+            audioElement.removeEventListener('error', onError);
+        };
+        
+        // Check if audio is already ready to play
+        if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA or better
+            audioElement.play()
+                .then(onPlay)
+                .catch(onError);
+        } else {
+            // Wait for audio to be ready
+            audioElement.addEventListener('canplay', onCanPlay, { once: true });
+            audioElement.addEventListener('error', onError, { once: true });
+            
+            // Force load if needed
+            if (audioElement.readyState === 0) {
+                audioElement.load();
+            }
+        }
+        
+        // Timeout after 2 seconds
+        timeoutId = setTimeout(() => {
+            if (isResolved) return;
+            isResolved = true;
+            cleanup();
+            console.warn(`${audioName} audio play attempt timed out`);
+            resolve(); // Don't reject on timeout, just continue
+        }, 2000);
+    });
+}
 
 // Add any necessary exports if using a module system. 
 // For now, assuming global scope for these functions. If script.js uses them, they must be available. 
