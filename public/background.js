@@ -48,10 +48,10 @@ async function setHour(h) {
     const gradIndex = Math.min(Math.max(hourToShow, 0), grads.length - 1);
     document.body.style.background = toCSS(grads[gradIndex]);
     
-    // Update stars based on time (8 PM - 4 AM) - TEMPORARILY DISABLED FOR TESTING
-    // if (window.starsModule) {
-    //     window.starsModule.updateStars(hourToShow);
-    // }
+    // Update optimized stars based on time (8 PM - 4 AM)
+    if (window.starsModule) {
+        window.starsModule.updateStars(hourToShow);
+    }
 }
 
 function updateSliderPosition(hourToShow) {

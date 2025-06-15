@@ -17,12 +17,24 @@ function createStars() {
         const starLayer = document.createElement('div');
         starLayer.className = `star-layer star-layer-${layer + 1}`;
         
-        // Create stars for this layer
-        const starCount = layer === 0 ? 50 : layer === 1 ? 30 : 20; // Different densities
+        // Create stars for this layer - mobile-optimized counts
+        const isMobile = window.innerWidth <= 768;
+        const starCount = isMobile 
+            ? (layer === 0 ? 15 : layer === 1 ? 10 : 5)  // 30 total on mobile
+            : (layer === 0 ? 35 : layer === 1 ? 25 : 15); // 75 total on desktop
         
         for (let i = 0; i < starCount; i++) {
             const star = document.createElement('div');
-            star.className = `star star-size-${Math.floor(Math.random() * 3) + 1}`;
+            
+            // Weighted star sizes for better visual balance
+            const rand = Math.random();
+            let starSize;
+            if (rand < 0.5) starSize = 1;       // 50% tiny stars
+            else if (rand < 0.8) starSize = 2;  // 30% small stars  
+            else if (rand < 0.95) starSize = 3; // 15% medium stars
+            else starSize = 4;                  // 5% large bright stars
+            
+            star.className = `star star-size-${starSize}`;
             
             // Random position
             star.style.left = Math.random() * 100 + '%';

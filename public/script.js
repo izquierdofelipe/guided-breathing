@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (circleElement) {
         circleElement.style.transition = `transform 1s ease-in-out`;
-        circleElement.style.transform = `translate(-50%, -50%) scale(${RESTING_SCALE})`; // Use RESTING_SCALE
+        circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${RESTING_SCALE})`; // GPU-accelerated
     }
 
     const wipeRadius = holdWipePathElement ? parseFloat(holdWipePathElement.getAttribute('r')) : 0;
@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Inhale for", effectiveInhaleTime, "seconds.");
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveInhaleTime}s ease-in-out`;
-                circleElement.style.transform = `translate(-50%, -50%) scale(${MAX_SCALE})`;
+                circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${MAX_SCALE})`;
             }
             if (isAudioEnabled && inhaleAudio) {
                 inhaleAudio.currentTime = 0;
@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Exhale for", effectiveExhaleTime, "seconds.");
             if (circleElement) {
                 circleElement.style.transition = `transform ${effectiveExhaleTime}s ease-in-out`;
-                circleElement.style.transform = `translate(-50%, -50%) scale(${INITIAL_SCALE})`;
+                circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${INITIAL_SCALE})`;
             }
             if (isAudioEnabled && exhaleAudio) {
                 exhaleAudio.currentTime = 0;
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (circleElement) {
             circleElement.style.transition = `transform 1s ease-in-out`; // Explicitly set transition for reset
-            circleElement.style.transform = `translate(-50%, -50%) scale(${RESTING_SCALE})`; // Use RESTING_SCALE
+            circleElement.style.transform = `translate3d(-50%, -50%, 0) scale(${RESTING_SCALE})`; // GPU-accelerated
         }
         
         stopPhaseSounds(inhaleAudio, holdAudio, exhaleAudio); // Use the new function from audio.js
@@ -306,10 +306,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.accountabilityModule.initializeAccountability();
     }
 
-    // Initialize stars system if available - TEMPORARILY DISABLED FOR TESTING
-    // if (window.starsModule) {
-    //     window.starsModule.initializeStars();
-    // }
+    // Initialize optimized stars system if available
+    if (window.starsModule) {
+        window.starsModule.initializeStars();
+    }
 
     // Ensure initial updateAnimation call correctly sets up UI displays
     // updateAnimation(false); // This call might also interact with setHour and needs to be aware of manualHour - Already called above
