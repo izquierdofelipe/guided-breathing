@@ -497,32 +497,32 @@ body {
     /* Removed filter - was causing white screen on mobile */
 }
 
-/* Different layers have different opacity and animation speeds */
+/* Different layers with moderate animation speeds - faster glimmer effect */
 .star-layer-1 .star {
-    animation-duration: 2s;
+    animation-duration: 4s;
     opacity: 0.4;
 }
 
 .star-layer-2 .star {
-    animation-duration: 3s;
+    animation-duration: 6s;
     opacity: 0.6;
 }
 
 .star-layer-3 .star {
-    animation-duration: 4s;
+    animation-duration: 7s;
     opacity: 0.8;
 }
 
-/* Optimized twinkling animation - GPU-friendly, opacity only */
+/* Optimized twinkling animation - limited opacity range for better performance */
 @keyframes twinkle-optimized {
     0% {
-        opacity: 0.2;
+        opacity: 0.5;
     }
     50% {
         opacity: 1;
     }
     100% {
-        opacity: 0.2;
+        opacity: 0.5;
     }
 }
 
