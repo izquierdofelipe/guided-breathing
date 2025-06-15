@@ -33,37 +33,39 @@ function createStars() {
         const starLayer = document.createElement('div');
         starLayer.className = `star-layer star-layer-${layer + 1}`;
         
-        // Create stars for this layer - ultra-conservative mobile counts
+        // Create stars for this layer - enhanced counts now that z-index is fixed
         const isMobile = window.innerWidth <= 768;
         const isSmallMobile = window.innerWidth <= 480; // Additional size check
         let starCount;
         
         if (isSmallMobile) {
-            // Very small screens - minimal stars
-            starCount = layer === 0 ? 15 : layer === 1 ? 8 : 5; // 28 total
+            // Very small screens - increased for better night sky
+            starCount = layer === 0 ? 20 : layer === 1 ? 12 : 8; // 40 total (was 28)
         } else if (isMobile) {
-            // Regular mobile screens - conservative count
-            starCount = layer === 0 ? 20 : layer === 1 ? 12 : 8; // 40 total
+            // Regular mobile screens - enhanced count
+            starCount = layer === 0 ? 28 : layer === 1 ? 18 : 12; // 58 total (was 40)
         } else {
-            // Desktop - full experience
-            starCount = layer === 0 ? 40 : layer === 1 ? 25 : 15; // 80 total
+            // Desktop - beautiful full experience
+            starCount = layer === 0 ? 50 : layer === 1 ? 35 : 25; // 110 total (was 80)
         }
         
         for (let i = 0; i < starCount; i++) {
             const star = document.createElement('div');
             
-            // Simplified star sizes for mobile performance
+            // Enhanced star size distribution for more natural look
             const rand = Math.random();
             let starSize;
             if (isMobile) {
-                // Mobile: Only use 2 sizes to reduce complexity
-                starSize = rand < 0.7 ? 1 : 2;  // 70% tiny, 30% small
+                // Mobile: 3 sizes for better variety while keeping performance
+                if (rand < 0.6) starSize = 1;       // 60% tiny stars
+                else if (rand < 0.85) starSize = 2; // 25% small stars
+                else starSize = 3;                  // 15% medium stars
             } else {
-                // Desktop: Full variety
-                if (rand < 0.5) starSize = 1;       // 50% tiny stars
-                else if (rand < 0.8) starSize = 2;  // 30% small stars  
-                else if (rand < 0.95) starSize = 3; // 15% medium stars
-                else starSize = 4;                  // 5% large bright stars
+                // Desktop: Full variety with enhanced distribution
+                if (rand < 0.45) starSize = 1;      // 45% tiny stars
+                else if (rand < 0.75) starSize = 2; // 30% small stars  
+                else if (rand < 0.92) starSize = 3; // 17% medium stars
+                else starSize = 4;                  // 8% large bright stars (increased from 5%)
             }
             
             star.className = `star star-size-${starSize}`;
@@ -77,8 +79,14 @@ function createStars() {
             const biasedTop = Math.min(rand1, rand2) * 100; // Bias towards smaller values (top)
             star.style.top = biasedTop + '%';
             
-            // Random animation delay for twinkling
-            star.style.animationDelay = Math.random() * 4 + 's';
+            // Enhanced animation delay with more variation
+            const animationDelay = Math.random() * 6 + 's'; // Longer range for more variety
+            star.style.animationDelay = animationDelay;
+            
+            // Add slight variation in animation duration for more organic feel
+            const baseDuration = isMobile ? 5 : 4; // Mobile: 5s base, Desktop: 4s base
+            const durationVariation = 0.5 + Math.random() * 2; // +0.5 to +2.5 seconds
+            star.style.animationDuration = (baseDuration + durationVariation) + 's';
             
             starLayer.appendChild(star);
         }
