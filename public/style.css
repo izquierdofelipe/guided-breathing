@@ -494,8 +494,7 @@ body {
     width: 4px;
     height: 4px;
     opacity: 1.0;
-    /* Subtle glow for largest stars - more efficient than box-shadow */
-    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+    /* Removed filter - was causing white screen on mobile */
 }
 
 /* Different layers have different opacity and animation speeds */
