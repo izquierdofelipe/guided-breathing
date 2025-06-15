@@ -144,9 +144,6 @@ function initializeAccountability() {
     if (isAccountabilityPage()) {
         console.log(`Accountability page detected: ${getCurrentPageName()}`);
         createAccountabilityTable();
-        
-        // Update the table every 30 seconds to show real-time progress
-        setInterval(updateAccountabilityTable, 30000);
     }
 }
 
@@ -155,5 +152,6 @@ window.accountabilityModule = {
     isAccountabilityPage,
     getCurrentPageName,
     recordCompletion,
+    updateAccountabilityTable,
     initializeAccountability
 }; 

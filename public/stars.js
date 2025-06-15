@@ -33,11 +33,21 @@ function createStars() {
         const starLayer = document.createElement('div');
         starLayer.className = `star-layer star-layer-${layer + 1}`;
         
-        // Create stars for this layer - increased counts for better visibility
+        // Create stars for this layer - ultra-conservative mobile counts
         const isMobile = window.innerWidth <= 768;
-        const starCount = isMobile 
-            ? (layer === 0 ? 20 : layer === 1 ? 12 : 8)   // 40 total on mobile
-            : (layer === 0 ? 40 : layer === 1 ? 25 : 15); // 80 total on desktop
+        const isSmallMobile = window.innerWidth <= 480; // Additional size check
+        let starCount;
+        
+        if (isSmallMobile) {
+            // Very small screens - minimal stars
+            starCount = layer === 0 ? 15 : layer === 1 ? 8 : 5; // 28 total
+        } else if (isMobile) {
+            // Regular mobile screens - conservative count
+            starCount = layer === 0 ? 20 : layer === 1 ? 12 : 8; // 40 total
+        } else {
+            // Desktop - full experience
+            starCount = layer === 0 ? 40 : layer === 1 ? 25 : 15; // 80 total
+        }
         
         for (let i = 0; i < starCount; i++) {
             const star = document.createElement('div');

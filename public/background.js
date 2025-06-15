@@ -28,8 +28,18 @@ const grads = [
     [{color:"00000c",position:80},{color:"150800",position:100}],
 ];
 
-const toCSS = stops =>
-    `linear-gradient(to bottom,${stops.map(s=>` #${s.color} ${s.position}%`).join(',')})`;
+// Cache for pre-computed gradients to avoid regenerating CSS strings
+const gradientCache = new Map();
+
+const toCSS = stops => {
+    const cacheKey = stops.map(s => `${s.color}-${s.position}`).join(',');
+    if (gradientCache.has(cacheKey)) {
+        return gradientCache.get(cacheKey);
+    }
+    const gradient = `linear-gradient(to bottom,${stops.map(s=>` #${s.color} ${s.position}%`).join(',')})`;
+    gradientCache.set(cacheKey, gradient);
+    return gradient;
+};
 
 let curHour = -1;
 const tzMapPromise = fetch('/tz-latlng.json')

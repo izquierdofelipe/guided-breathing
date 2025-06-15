@@ -17,7 +17,7 @@ body {
 }
 
 #circle {
-  background-color: rgba(255, 255, 255, 1);
+  background-color: rgba(255, 255, 255);
   /* Responsive sizing: target 35vh, but ensure scaled size (1.4x) is max 90vw */
   /* So, base size should be max (90vw / 1.4) = ~64.2857vw */
   width: min(35vh, 64.2857vw);
@@ -37,8 +37,8 @@ body {
     position: absolute;
     top: 20px;
     left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.7);
+    transform: translate3d(-50%, 0, 0); /* GPU acceleration */
+    background-color: rgb(230, 230, 230);
     padding: 10px 20px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -75,18 +75,19 @@ body {
     position: absolute;
     top: 10%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0); /* GPU acceleration */
     text-align: center;
     z-index: 5;
     cursor: pointer; /* Make it appear clickable */
     user-select: none; /* Prevent text selection when clicking */
+    will-change: contents; /* Hint for text content changes */
 }
 
 #cycle-counter-text {
     font-family: 'Roboto', sans-serif;
     font-weight: 300; /* Light weight */
     font-size: clamp(2rem, 0.5vw + 1.5rem, 3.5rem);
-    color: rgba(255, 255, 255, 0.8);
+    color: rgb(230, 230, 230);
     margin: 0;
 }
 
@@ -94,7 +95,7 @@ body {
     font-family: 'Roboto', sans-serif;
     font-weight: 300; /* Light weight */
     font-size: clamp(1.5rem, 0.5vw + 1rem, 2.5rem);
-    color: rgba(255, 255, 255, 0.70);
+    color: rgb(230, 230, 230);
     margin-top: 5px; /* Space below the cycle counter */
 }
 
@@ -130,7 +131,7 @@ body {
     position: fixed;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate3d(-50%, -50%, 0); /* GPU acceleration */
     background-color: #f0f0f0; /* Light background for modal */
     padding: 25px;
     padding-top: 40px; /* More space for close button */
@@ -142,6 +143,7 @@ body {
     max-height: 90vh; /* Max height relative to viewport */
     overflow-y: auto; /* Allow internal scrolling if content exceeds max-height */
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    will-change: transform, opacity; /* GPU acceleration hints for modal animations */
 }
 
 /* Style for the .controls div when it's inside the modal */
@@ -267,7 +269,7 @@ body {
     left: 2px;
     width: 20px; /* Size of the inner circle */
     height: 20px; /* Size of the inner circle */
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgb(230, 230, 230);
     border-radius: 50%;
     transition: transform 0.2s ease-in-out;
 }
@@ -277,7 +279,7 @@ body {
 }
 
 .audio-row #audio-toggle:checked + .custom-checkbox-label::after {
-    transform: translateX(20px); /* Move circle to the right */
+    transform: translate3d(20px, 0, 0); /* GPU-accelerated movement */
 }
 
 /* Focus style for accessibility if desired - can be added later */
@@ -321,9 +323,10 @@ body {
     left: 50%;
     width: 105%; /* Slightly larger than the parent circle */
     height: 105%;
-    transform: translate(-50%, -50%) rotate(-90deg); /* Center and rotate for clockwise start from top */
+    transform: translate3d(-50%, -50%, 0) rotate(-90deg); /* GPU acceleration + rotate */
     overflow: visible; /* Allow stroke to exceed viewbox if needed, though r=48 in 0 0 100 100 is fine */
     z-index: -1; /* Ensure wipe SVG is behind the circle */
+    will-change: transform; /* GPU acceleration hint */
 }
 
 #hold-wipe-path {
@@ -331,6 +334,7 @@ body {
     stroke: rgba(255, 255, 255, 0.4); /* White, more translucent than circle */
     stroke-width: 5; /* Adjust for desired thickness */
     transform-origin: center center;
+    will-change: stroke-dashoffset, stroke-opacity; /* GPU acceleration hints */
 }
 
 /* Apply wipe animation when main circle is breathing */
@@ -361,7 +365,7 @@ body {
     position: fixed;
     bottom: 8%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0); /* GPU acceleration */
     z-index: 100;
 }
 
@@ -391,11 +395,10 @@ body {
 .period-icon {
     width: 24px;
     height: 24px;
-    filter: brightness(2) contrast(1.5)
 }
 
 .name-cell {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgb(230, 230, 230);
     font-family: 'Roboto', sans-serif;
     font-size: 14px;
     font-weight: 300; /* Light weight */
@@ -403,7 +406,7 @@ body {
 }
 
 .period-cell {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgb(230, 230, 230);
     font-size: 18px;
     text-align: center;
 }
@@ -419,6 +422,25 @@ body {
 
 .accountability-table tbody tr.current-user:hover {
     background: none;
+}
+
+/* Mobile-first performance optimizations */
+@media (max-width: 768px) {
+    /* Reduce animation complexity on mobile */
+    .star {
+        animation-duration: 6s !important; /* Slower, less frequent updates */
+    }
+    
+    /* Optimize circle transforms */
+    #circle {
+        will-change: transform; /* Ensure GPU acceleration */
+    }
+    
+    /* Simplify period icons on mobile */
+    .period-icon {
+        box-shadow: none; /* Remove shadow on mobile for performance */
+        opacity: 1; /* Increase opacity to compensate */
+    }
 }
 
 /* Responsive adjustments for minimalist table */
@@ -440,6 +462,11 @@ body {
     .accountability-table td {
         padding: 6px 8px;
     }
+    
+    /* Further reduce star complexity on very small screens */
+    .star {
+        animation-duration: 8s !important; /* Even slower */
+    }
 }
 
 /* Starry Night Effect */
@@ -453,6 +480,8 @@ body {
     z-index: -10; /* Behind everything except background */
     opacity: 0;
     transition: opacity 1s ease-in-out;
+    contain: layout style paint; /* Performance isolation */
+    will-change: opacity; /* GPU acceleration hint */
 }
 
 .star-layer {

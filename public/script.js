@@ -154,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Record completion for accountability if on an accountability page
                 if (window.accountabilityModule && window.accountabilityModule.isAccountabilityPage()) {
                     await window.accountabilityModule.recordCompletion();
+                    // Ensure the accountability table is updated after completion
+                    await window.accountabilityModule.updateAccountabilityTable();
                 }
                 
                 playEndSound(isAudioEnabled, endAudio);
