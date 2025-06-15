@@ -72,37 +72,47 @@ app.use((req, res, next) => {
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// API endpoint to record a completion
+// Record a completion for a specific user
 app.post('/api/complete/:name', (req: Request, res: Response) => {
-  const name = req.params.name;
+  const { name } = req.params;
   
-  // Only allow Andre and Felipe
   if (name !== 'Andre' && name !== 'Felipe') {
-    return res.status(400).json({ error: 'Invalid name' });
+    return res.status(400).json({ success: false, message: 'Invalid name' });
   }
-  
+
   try {
     const data = ensureAccountabilityFile();
     
-    // Get current hour and determine time period
-    const currentHour = new Date().getHours();
-    const timePeriod = getTimePeriod(currentHour);
+    // Get time period from client request (user's local time) or fallback to server time
+    let timePeriod: keyof DayPeriods;
+    let hourForLogging: number;
     
+    if (req.body && req.body.timePeriod && req.body.localHour !== undefined) {
+      // Use client-provided time period (based on user's local time)
+      timePeriod = req.body.timePeriod;
+      hourForLogging = req.body.localHour;
+    } else {
+      // Fallback to server time (should rarely happen now)
+      const currentHour = new Date().getHours();
+      timePeriod = getTimePeriod(currentHour);
+      hourForLogging = currentHour;
+    }
+
     // Mark the appropriate time period as completed
     data[name as keyof AccountabilityData][timePeriod] = true;
     
     fs.writeFileSync(ACCOUNTABILITY_FILE, JSON.stringify(data, null, 2));
+    console.log(`${name} completed a breathing session during ${timePeriod} period (hour: ${hourForLogging})`);
     
-    console.log(`${name} completed a breathing session during ${timePeriod} period (hour: ${currentHour})`);
     res.json({ 
       success: true, 
       timePeriod: timePeriod,
-      hour: currentHour,
+      localHour: hourForLogging,
       data: data[name as keyof AccountabilityData]
     });
   } catch (error) {
     console.error('Error recording completion:', error);
-    res.status(500).json({ error: 'Failed to record completion' });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 

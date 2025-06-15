@@ -13,22 +13,38 @@ function isAccountabilityPage() {
     return getCurrentPageName() !== null;
 }
 
+// Function to determine time period based on user's local hour (same logic as server but using local time)
+function getTimePeriod(hour) {
+    if (hour < 11) return 'morning';      // 0-10: morning
+    if (hour < 17) return 'midday';       // 11-16: midday  
+    return 'evening';                     // 17-23: evening
+}
+
 // Record a completion for the current user
 async function recordCompletion() {
     const pageName = getCurrentPageName();
     if (!pageName) return;
     
     try {
+        // Get user's local time (same approach as gradient system)
+        const now = new Date();
+        const currentLocalHour = now.getHours();
+        const timePeriod = getTimePeriod(currentLocalHour);
+        
         const response = await fetch(`/api/complete/${pageName}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                timePeriod: timePeriod,
+                localHour: currentLocalHour
+            })
         });
         
         if (response.ok) {
             const result = await response.json();
-            console.log(`Completion recorded for ${pageName} during ${result.timePeriod} period (hour: ${result.hour})`);
+            console.log(`Completion recorded for ${pageName} during ${result.timePeriod} period (local hour: ${result.localHour})`);
             // Update the accountability table with fresh data
             await updateAccountabilityTable();
         } else {
