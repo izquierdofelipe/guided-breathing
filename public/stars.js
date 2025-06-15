@@ -9,11 +9,11 @@ function canHandleStars() {
     const isMobile = window.innerWidth <= 768;
     if (!isMobile) return true; // Desktop can handle it
     
-    // Conservative check for mobile - disable on very small screens or low memory
-    if (window.innerWidth < 400) return false;
-    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) return false;
+    // Less restrictive check for mobile - only disable on very old/weak devices
+    if (window.innerWidth < 320) return false; // Only disable on very tiny screens
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 2) return false; // Only disable on very weak CPUs
     
-    return true; // Allow for modern mobile devices
+    return true; // Allow for most mobile devices
 }
 
 // Create stars container and stars
@@ -83,6 +83,9 @@ function createStars() {
 // Show stars with fade in
 function showStars() {
     if (!starsContainer) createStars();
+    
+    // Check if stars were actually created (might be disabled for performance)
+    if (!starsContainer) return;
     
     if (!starsVisible) {
         starsVisible = true;
