@@ -25,50 +25,57 @@ const audioSources = {
 };
 
 function initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio) {
-    if (audioInitialized) return;
+    return new Promise((resolve) => {
+        if (audioInitialized && mainAudioElement) {
+            console.log("Audio already initialized");
+            resolve();
+            return;
+        }
 
-    // Create a single audio element for better mobile compatibility
-    if (!mainAudioElement) {
-        mainAudioElement = document.createElement('audio');
-        mainAudioElement.id = 'main-audio';
-        mainAudioElement.preload = 'none'; // Don't preload on mobile to avoid issues
-        mainAudioElement.volume = 0.6;
-        document.body.appendChild(mainAudioElement);
-        
-        console.log("Single audio element created for mobile compatibility");
-    }
+        // Create a single audio element for better mobile compatibility
+        if (!mainAudioElement) {
+            mainAudioElement = document.createElement('audio');
+            mainAudioElement.id = 'main-audio';
+            mainAudioElement.preload = 'none'; // Don't preload on mobile to avoid issues
+            mainAudioElement.volume = 0.6;
+            document.body.appendChild(mainAudioElement);
+            
+            console.log("Single audio element created for mobile compatibility");
+        }
 
-    // Try to unlock audio context on mobile
-    try {
-        // Play a silent audio to unlock the audio context
+        // Properly unlock audio context on mobile
         const unlockAudio = () => {
-            if (mainAudioElement) {
+            if (mainAudioElement && !audioInitialized) {
+                // Set a temporary silent source to unlock
+                mainAudioElement.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhST1sK2FBxYLdlTFm'; // Tiny WAV file
                 const playPromise = mainAudioElement.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {
                         mainAudioElement.pause();
                         mainAudioElement.currentTime = 0;
+                        mainAudioElement.src = ''; // Clear the temporary source
+                        audioInitialized = true;
                         console.log("Audio context unlocked successfully");
-                    }).catch(() => {
-                        // Ignore unlock errors, will try again later
+                        resolve();
+                    }).catch((error) => {
+                        console.warn("Audio unlock failed, but continuing:", error);
+                        audioInitialized = true;
+                        resolve();
                     });
+                } else {
+                    // Older browser fallback
+                    audioInitialized = true;
+                    console.log("Audio unlocked (legacy browser)");
+                    resolve();
                 }
+            } else {
+                resolve();
             }
         };
 
-        // Try to unlock immediately
+        // Try to unlock immediately (this should work on the first user click)
         unlockAudio();
-        
-        // Also try on next user interaction
-        document.addEventListener('touchstart', unlockAudio, { once: true });
-        document.addEventListener('click', unlockAudio, { once: true });
-        
-    } catch (error) {
-        console.warn("Error unlocking audio context:", error);
-    }
-
-    audioInitialized = true;
-    console.log("Mobile-optimized audio system initialized");
+    });
 }
 
 // Simple, reliable audio playing function for mobile

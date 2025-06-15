@@ -86,7 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const myId = Symbol('processId'); // Unique ID for this specific run
         activeProcessController = myId;   // This instance is now the active one
 
-        initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
+        // Properly initialize and wait for audio to be ready
+        await initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
 
         currentCycleCount = 0;
 
@@ -254,8 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (circleElement && inhaleInput && holdInput && exhaleInput && totalCyclesInput && cycleCounterTextElement && durationDisplayTextElement && cycleCounterContainerElement && settingsModal && modalOverlay && closeModalBtn && holdWipePathElement) {
-        circleElement.addEventListener('click', () => {
-            initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
+        circleElement.addEventListener('click', async () => {
+            // Ensure audio is initialized on first user interaction
+            await initializeAndUnlockAudio(inhaleAudio, holdAudio, exhaleAudio, endAudio);
             
             if (isAnimating) { // If current intent is animating, click means STOP
                 console.log("Circle clicked: Stopping animation (intent was animating).");
