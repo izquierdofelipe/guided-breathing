@@ -28,7 +28,7 @@ body {
   left: 50%;
   transform: translate3d(-50%, -50%, 0); /* GPU-accelerated 3D transform */
   cursor: pointer;
-  z-index: 1; /* Ensure circle is above the wipe SVG */
+  z-index: 3; /* Above the wipe SVG and stars */
   will-change: transform; /* GPU acceleration hint for smooth scaling */
   /* transition for transform is now set by JS in script.js */
 }
@@ -325,7 +325,7 @@ body {
     height: 105%;
     transform: translate3d(-50%, -50%, 0) rotate(-90deg); /* GPU acceleration + rotate */
     overflow: visible; /* Allow stroke to exceed viewbox if needed, though r=48 in 0 0 100 100 is fine */
-    z-index: -1; /* Ensure wipe SVG is behind the circle */
+    z-index: 2; /* Behind the circle but above stars */
     will-change: transform; /* GPU acceleration hint */
 }
 
@@ -477,7 +477,7 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: -10; /* Behind everything except background */
+    z-index: 1; /* Lowest positive z-index - behind everything else */
     opacity: 0;
     transition: opacity 1s ease-in-out;
     contain: layout style paint; /* Performance isolation */
