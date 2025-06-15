@@ -150,6 +150,12 @@ document.addEventListener('DOMContentLoaded', () => {
             activeProcessController = null;     // Clear myself as active
             if (currentCycleCount >= totalCycles && isProcessRunning) { // Check isProcessRunning to ensure it wasn't reset externally
                 console.log("Breathing exercise completed naturally.");
+                
+                // Record completion for accountability if on an accountability page
+                if (window.accountabilityModule && window.accountabilityModule.isAccountabilityPage()) {
+                    await window.accountabilityModule.recordCompletion();
+                }
+                
                 playEndSound(isAudioEnabled, endAudio);
                 resetAnimationState(); // Resets isAnimating and isProcessRunning to false
             } else if (isProcessRunning) { 
@@ -293,6 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } else {
         console.error('One or more required elements were not found.');
+    }
+
+    // Initialize accountability features if available
+    if (window.accountabilityModule) {
+        window.accountabilityModule.initializeAccountability();
     }
 
     // Ensure initial updateAnimation call correctly sets up UI displays

@@ -1,0 +1,12 @@
+{
+  "Andre": {
+    "morning": false,
+    "midday": false,
+    "evening": false
+  },
+  "Felipe": {
+    "morning": false,
+    "midday": false,
+    "evening": true
+  }
+}
